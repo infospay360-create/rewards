@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, UserCheck, Ticket, Trophy, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, Ticket, Trophy, Sparkles } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 
 interface StatsCardsProps {
@@ -8,7 +8,6 @@ interface StatsCardsProps {
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ users }) => {
   const totalUsers = users.length;
-  const totalDirects = users.reduce((sum, u) => sum + (u.directCount || 0), 0);
   const totalTickets = users.reduce((sum, u) => sum + (u.ticketCount || 0), 0);
   
   // Top user
@@ -16,7 +15,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ users }) => {
   const nearTicketCount = users.filter((u) => u.directCount % 5 === 4).length;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 my-6">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 my-6">
       {/* Total Users */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-slate-800/80 to-slate-900/90 border border-slate-700/60 p-4 sm:p-5 shadow-lg">
         <div className="flex items-center justify-between">
@@ -34,25 +33,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ users }) => {
         <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400 font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
           <span>Active on Leaderboard</span>
-        </div>
-      </div>
-
-      {/* Total Direct Referrals */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-slate-800/80 to-slate-900/90 border border-slate-700/60 p-4 sm:p-5 shadow-lg">
-        <div className="flex items-center justify-between">
-          <span className="text-xs sm:text-sm font-semibold text-slate-400">Total Directs</span>
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-        </div>
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">
-            {totalDirects}
-          </span>
-          <span className="text-xs text-slate-400 font-medium">Total Refers</span>
-        </div>
-        <div className="mt-2 text-[11px] text-slate-400">
-          Avg {(totalDirects / (totalUsers || 1)).toFixed(1)} directs / user
         </div>
       </div>
 

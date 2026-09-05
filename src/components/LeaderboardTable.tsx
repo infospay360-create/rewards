@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Minus, Ticket, Users, Sparkles, Edit2, Trash2, Coins } from 'lucide-react';
+import { Search, Plus, Minus, Ticket, Users, Sparkles, Edit2, Trash2, Shirt, Coins } from 'lucide-react';
 import { LeaderboardUser, FilterCategory } from '../types';
 import { getRankBadge, padZero, calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
@@ -147,7 +147,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               <th className="py-3 px-4">User Details</th>
               <th className="py-3 px-4 text-center">Direct Users</th>
               <th className="py-3 px-4 text-center">Earned Tickets</th>
-              <th className="py-3 px-4 text-center">Cash Prize</th>
+              <th className="py-3 px-4 text-center">Top 10 Cash Prize</th>
               <th className="py-3 px-4 min-w-[170px]">Next Ticket Status</th>
               {isAdmin && <th className="py-3 px-4 text-right">Admin Action</th>}
             </tr>
@@ -171,6 +171,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 const { needed, currentInCycle, percentage } = calculateProgressToNextTicket(user.directCount);
                 const isNearTicket = user.directCount % 5 === 4;
                 const cashPrize = getCashPrizeForRank(absoluteRank);
+                const hasTshirt = user.directCount >= 5;
 
                 return (
                   <tr
@@ -203,6 +204,12 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                                 🎯 1 Away!
                               </span>
                             )}
+                            {hasTshirt && (
+                              <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Free SmartPay360 T-Shirt Earned on 5 Directs!">
+                                <Shirt className="w-2.5 h-2.5 text-sky-400" />
+                                <span>T-Shirt Won</span>
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-slate-400 font-medium">
                             {user.name || `Member ${user.userId.slice(-4)}`}
@@ -233,15 +240,27 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                       </div>
                     </td>
 
-                    {/* Cash Prize */}
+                    {/* Top 10 Cash Prize */}
                     <td className="py-3.5 px-4 text-center">
                       {cashPrize ? (
-                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 border border-amber-500/30 text-amber-300 font-mono font-black text-xs">
-                          <span>💵</span>
-                          <span>{cashPrize.formatted}</span>
+                        <div
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-black text-xs shadow-sm ${
+                            absoluteRank === 1
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                              : absoluteRank === 2
+                              ? 'bg-slate-300/20 text-slate-200 border border-slate-400/50'
+                              : absoluteRank === 3
+                              ? 'bg-amber-700/20 text-amber-400 border border-amber-600/50'
+                              : absoluteRank <= 6
+                              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40'
+                              : 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{cashPrize.formatted} CASH</span>
                         </div>
                       ) : (
-                        <span className="text-slate-600 text-xs">—</span>
+                        <span className="text-slate-600 text-xs font-mono">—</span>
                       )}
                     </td>
 

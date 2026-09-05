@@ -21,10 +21,10 @@ export const NoticeBanner: React.FC = () => {
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-                🎯 TICKET REWARD SYSTEM: 👥 5 DIRECT ➜ 🎟️ 1 TICKET
+                🎯 LUCKY DRAW RULES: 👥 EVERY 5 DIRECT ➜ 🎟️ 1 TICKET
               </h3>
               <p className="text-xs sm:text-sm text-slate-300">
-                Har 5 direct referrals par automatically 1 live ticket unlock hota hai. Jiske jitne direct & ticket, utna top rank!
+                Jitne bhi bar 5 direct hoga, har 5 direct me 1 ticket milega! <strong>1st 5 direct me Free T-Shirt!</strong> Jis k pas jada tickets honge, wo Lucky Draw me 40 Mega Prizes (10 Real Gifts + 30 E-Wallets) win kar sakta hai!
               </p>
             </div>
           </div>
@@ -32,8 +32,8 @@ export const NoticeBanner: React.FC = () => {
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700/80 shrink-0">
             <Calendar className="w-4 h-4 text-amber-400" />
             <div className="text-left">
-              <span className="text-[10px] text-slate-400 block font-semibold uppercase">Contest Deadline</span>
-              <span className="text-xs sm:text-sm font-bold text-amber-300">Live Till — 31 October</span>
+              <span className="text-[10px] text-slate-400 block font-semibold uppercase">Contest Dates</span>
+              <span className="text-xs sm:text-sm font-bold text-amber-300">1 Sep to 31 Oct</span>
             </div>
           </div>
         </div>

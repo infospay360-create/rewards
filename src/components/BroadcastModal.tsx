@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Copy, Check, Share2, X, Trophy, Coins } from 'lucide-react';
+import { Copy, Check, Share2, X, Trophy, Coins, Gift } from 'lucide-react';
 import { LeaderboardUser } from '../types';
-import { generateWhatsAppBroadcast, generateTop10CashBroadcast } from '../utils/leaderboardUtils';
+import {
+  generateWhatsAppBroadcast,
+  generateTop10CashBroadcast,
+  generateLuckyDraw40Broadcast,
+} from '../utils/leaderboardUtils';
 
 interface BroadcastModalProps {
   isOpen: boolean;
@@ -14,13 +18,15 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
   onClose,
   users,
 }) => {
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'cash'>('cash');
+  const [activeTab, setActiveTab] = useState<'luckydraw' | 'cash' | 'leaderboard'>('luckydraw');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
   const currentText =
-    activeTab === 'cash'
+    activeTab === 'luckydraw'
+      ? generateLuckyDraw40Broadcast(users)
+      : activeTab === 'cash'
       ? generateTop10CashBroadcast(users)
       : generateWhatsAppBroadcast(users);
 
@@ -48,7 +54,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
                 WhatsApp & Telegram Broadcast Generator
               </h3>
               <p className="text-xs text-slate-400">
-                Copy formatted announcement with live ranks, tickets & cash prizes
+                Copy formatted announcement with live ranks, tickets & 40 Lucky Draw Rewards
               </p>
             </div>
           </div>
@@ -62,7 +68,19 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 px-5 pt-3 pb-1 border-b border-slate-800 bg-slate-950/20">
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-3 pb-1 border-b border-slate-800 bg-slate-950/20">
+          <button
+            type="button"
+            onClick={() => setActiveTab('luckydraw')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'luckydraw'
+                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Gift className="w-3.5 h-3.5 text-slate-950" />
+            <span>🪔 40 LUCKY DRAW REWARDS</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('cash')}
@@ -85,7 +103,7 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
             }`}
           >
             <Trophy className="w-3.5 h-3.5" />
-            <span>📊 FULL LEADERBOARD FORMAT</span>
+            <span>📊 FULL LEADERBOARD</span>
           </button>
         </div>
 

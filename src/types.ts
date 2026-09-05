@@ -17,6 +17,17 @@ export interface CashPrize {
   badge: string;
 }
 
+export interface LuckyDrawPrize {
+  rank: number;
+  rankLabel: string;
+  title: string;
+  category: 'real_gift' | 'wallet_cash' | 'special_bonus';
+  detail: string;
+  iconType: string;
+  badgeColor: string;
+  isRealGift: boolean;
+}
+
 export type FilterCategory = 'all' | 'top10' | 'ticket_holders' | 'near_ticket';
 export type SortOption = 'rank' | 'directs_desc' | 'tickets_desc' | 'recent';
 

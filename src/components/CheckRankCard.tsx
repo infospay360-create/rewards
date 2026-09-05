@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Trophy, Coins, Sparkles, ArrowRight, UserCheck, Ticket, AlertCircle } from 'lucide-react';
+import { Search, Trophy, Coins, Sparkles, UserCheck, Ticket, AlertCircle, Shirt } from 'lucide-react';
 import { LeaderboardUser } from '../types';
-import { getCashPrizeForRank, calculateProgressToNextTicket, padZero } from '../utils/leaderboardUtils';
+import { calculateProgressToNextTicket, padZero, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
 interface CheckRankCardProps {
   users: LeaderboardUser[];
@@ -34,6 +34,7 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
 
   const cashPrize = searchedUser ? getCashPrizeForRank(searchedUser.rank) : null;
   const progress = searchedUser ? calculateProgressToNextTicket(searchedUser.user.directCount) : null;
+  const hasTshirt = searchedUser ? searchedUser.user.directCount >= 5 : false;
 
   // Compare to user ahead of them
   const aheadUser = searchedUser && searchedUser.rank > 1 ? users[searchedUser.rank - 2] : null;
@@ -45,15 +46,15 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-1 rounded bg-indigo-500/20 text-indigo-400">
+            <span className="p-1 rounded bg-amber-500/20 text-amber-400">
               <Search className="w-4 h-4" />
             </span>
             <h3 className="text-base sm:text-lg font-bold text-white">
-              Check My Live Rank & Cash Prize
+              Check My Live Rank & Lucky Draw Prize
             </h3>
           </div>
           <p className="text-xs text-slate-400">
-            Apna User ID dalo aur apna live rank, direct count, ticket aur cash prize status check karo!
+            Apna User ID enter karke apna live rank, total tickets aur 40 Lucky Draw Rewards me se apna status check karein!
           </p>
         </div>
 
@@ -94,32 +95,41 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
                       <span className="text-xs text-slate-400 font-medium">
                         ({searchedUser.user.name || 'Member'})
                       </span>
+                      {hasTshirt ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                          <Shirt className="w-3 h-3 text-sky-400" /> Free T-Shirt Unlocked
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          👕 {5 - searchedUser.user.directCount} more for T-Shirt
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-slate-400">
-                      Current Live Standings in SMARTPAY360 Contest
+                      Current Live Standings in SMARTPAY360 Lucky Draw Contest
                     </div>
                   </div>
                 </div>
 
-                {/* Cash Prize Status */}
+                {/* Top 10 Cash Prize Status */}
                 {cashPrize ? (
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40">
-                    <Coins className="w-5 h-5 text-amber-400" />
+                  <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40">
+                    <Coins className="w-6 h-6 text-amber-400 shrink-0" />
                     <div>
                       <span className="text-[10px] text-amber-300 block font-bold uppercase tracking-wider">
-                        Qualifying For Cash
+                        Qualifying for Top 10 Cash Prize
                       </span>
-                      <span className="text-sm sm:text-base font-black text-white font-mono">
-                        💵 {cashPrize.formatted} CASH
+                      <span className="text-base sm:text-lg font-black text-amber-300 font-mono">
+                        💵 {cashPrize.formatted} CASH ({cashPrize.badge})
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-slate-400 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
-                    <span className="text-amber-400 font-semibold">
-                      {searchedUser.rank - 10} ranks away
-                    </span>{' '}
-                    from Top 10 Cash Prize (₹500+)!
+                  <div className="text-xs text-slate-400 bg-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-800 flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      <strong className="text-amber-400">{searchedUser.rank - 10} ranks away</strong> from Top 10 Cash Prize (₹500+)!
+                    </span>
                   </div>
                 )}
               </div>
@@ -134,7 +144,7 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
-                  <span className="text-slate-400 block mb-0.5">Earned Tickets</span>
+                  <span className="text-slate-400 block mb-0.5">Lucky Draw Tickets</span>
                   <span className="text-base font-black text-amber-400 font-mono">
                     🎟️ {searchedUser.user.ticketCount} Tickets
                   </span>

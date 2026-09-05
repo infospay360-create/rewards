@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Plus, Minus, Coins } from 'lucide-react';
+import { Trophy, Plus, Minus, Coins, Shirt } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 import { calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
@@ -31,6 +31,7 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
   ) => {
     const { needed, currentInCycle, percentage } = calculateProgressToNextTicket(user.directCount);
     const cashPrize = getCashPrizeForRank(rank);
+    const hasTshirt = user.directCount >= 5;
 
     return (
       <div className="flex flex-col items-center flex-1 max-w-[280px]">
@@ -61,11 +62,18 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
               {user.name || `Leader ${user.userId.slice(-4)}`}
             </div>
 
-            {/* Cash Prize Highlight */}
+            {/* Top 3 Cash Reward */}
             {cashPrize && (
-              <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black font-mono">
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 text-xs font-black shadow-inner">
                 <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span>💵 {cashPrize.formatted} CASH</span>
+                <span>CASH {cashPrize.formatted}</span>
+              </div>
+            )}
+
+            {hasTshirt && (
+              <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 text-[10px] font-bold">
+                <Shirt className="w-3 h-3 text-sky-400" />
+                <span>+ Free T-Shirt Unlocked</span>
               </div>
             )}
           </div>

@@ -147,40 +147,9 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
     }
   };
 
-  // If user is not admin, show locked status bar with one-click login
+  // If user is not admin, hide completely from public middle view
   if (!isAdmin) {
-    return (
-      <div
-        id="quick-upgrade-section"
-        className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-5 sm:p-6 shadow-xl mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-            <Lock className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span>Admin Management Panel</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                LOCKED
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              User ID add karne aur direct/tickets update karne ke liye Admin Login kijiye. Baki visitors apna rank upar check kar sakte hain.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onOpenLogin}
-          className="whitespace-nowrap px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 shadow-lg shadow-orange-500/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Login to Admin Panel</span>
-        </button>
-      </div>
-    );
+    return null;
   }
 
   // Admin View (Unlocked)

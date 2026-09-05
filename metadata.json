@@ -1,6 +1,6 @@
 {
   "name": "SmartPay360 Live Leaderboard",
-  "description": "SMARTPAY360 Live Leaderboard with Top 10 Cash distribution (₹10,750 pool), automatic ticket generation (5 direct = 1 ticket), and secure admin management portal.",
+  "description": "SMARTPAY360 Live Ticket & Lucky Draw Leaderboard with 40 Mega Prizes (10 Real Gifts, ₹500 & ₹250 E-Wallets), 5 Direct = 1 Ticket formula, Free T-Shirt offer, and admin management.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

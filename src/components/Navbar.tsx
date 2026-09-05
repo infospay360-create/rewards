@@ -79,18 +79,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   id="btn-quick-upgrade-nav"
                   type="button"
                   onClick={onScrollToUpgrade}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20 hover:brightness-110 transition active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20 hover:brightness-110 transition active:scale-95 cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin Upgrade</span>
-                  <span className="sm:hidden">Upgrade</span>
+                  <span className="hidden sm:inline">Admin Panel</span>
+                  <span className="sm:hidden">Admin</span>
                 </button>
 
                 <button
                   id="btn-admin-logout"
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-rose-300 hover:bg-rose-950/40 border border-rose-900/40 transition cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-rose-300 hover:bg-rose-950/40 border border-rose-900/40 transition cursor-pointer"
                   title="Logout from Admin Panel"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-400" />
@@ -102,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="btn-open-admin-login"
                 type="button"
                 onClick={onOpenLogin}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 hover:border-amber-500 transition shadow-sm active:scale-95 cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
                 <span>Admin Login</span>

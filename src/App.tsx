@@ -13,6 +13,7 @@ import {
 } from './utils/leaderboardUtils';
 import { Navbar } from './components/Navbar';
 import { Top10CashBanner } from './components/Top10CashBanner';
+import { LuckyDrawRewardsBanner } from './components/LuckyDrawRewardsBanner';
 import { CheckRankCard } from './components/CheckRankCard';
 import { StatsCards } from './components/StatsCards';
 import { QuickUpgradeBar } from './components/QuickUpgradeBar';
@@ -240,8 +241,11 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Top 10 Cash Distribution Bonanza Banner */}
+        {/* Top 10 Cash Bonanza Banner (Original Top 10 Cash Distribution) */}
         <Top10CashBanner users={users} />
+
+        {/* Durga Puja & Diwali 40 Lucky Draw Rewards Showcase (Pure Text List, No Images) */}
+        <LuckyDrawRewardsBanner users={users} />
 
         {/* Public User "Check My Live Rank" Search Card */}
         <CheckRankCard users={users} />
@@ -249,14 +253,16 @@ export default function App() {
         {/* Live Metrics: Total User, Total Direct, Total Ticket */}
         <StatsCards users={users} />
 
-        {/* Fast User ID & Direct Upgrade System (Admin Only / Login Prompt) */}
-        <QuickUpgradeBar
-          isAdmin={isAdmin}
-          onOpenLogin={() => setIsLoginModalOpen(true)}
-          users={users}
-          onUpgradeUser={handleUpgradeUser}
-          onDeleteUser={handleDeleteUser}
-        />
+        {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
+        {isAdmin && (
+          <QuickUpgradeBar
+            isAdmin={isAdmin}
+            onOpenLogin={() => setIsLoginModalOpen(true)}
+            users={users}
+            onUpgradeUser={handleUpgradeUser}
+            onDeleteUser={handleDeleteUser}
+          />
+        )}
 
         {/* Top 3 Podium Highlights with Cash Badges */}
         {users.length >= 3 && (

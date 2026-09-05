@@ -183,6 +183,53 @@ export function generateTop10CashBroadcast(users: LeaderboardUser[]): string {
   return text;
 }
 
+export function generateLuckyDraw40Broadcast(users: LeaderboardUser[]): string {
+  const sorted = sortLeaderboard(users);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const REAL_GIFTS = [
+    'WASHING MACHINE',
+    'SPORTS BICYCLE',
+    'MIXER GRINDER',
+    '5Ltr PRESTIGE PRESSURE COOKER',
+    'GAS STOVE',
+    'BLUETOOTH SOUND SYSTEM',
+    'COOKWARE SET',
+    'NOKIA KEYPAD PHONE',
+    'AMBRANE POWER BANK',
+    'FASTRACK SUNGLASSES',
+  ];
+
+  let text = `🪔🏆 SMARTPAY360 | DURGA PUJA & DIWALI LUCKY DRAW 🏆🪔\n\n`;
+  text += `ACHIEVE MORE • EARN MORE • WIN BIG!\n`;
+  text += `🎁 TOTAL 40 MEGA PRIZES • 1 SEP TO 31 OCT\n\n`;
+  text += `╔══════════════════════════╗\n`;
+  text += `📊 CURRENT PERFORMANCE (${dateStr})\n`;
+  text += `╚══════════════════════════╝\n\n`;
+  text += `👤 USER ID | 👥 DIRECT | 🎟️ TICKET | 🎁 PRIZE\n\n`;
+
+  REAL_GIFTS.forEach((giftName, idx) => {
+    const rankNum = idx + 1;
+    const medal = rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : rankNum <= 6 ? '🏅' : '⭐';
+    const user = sorted[idx];
+    const userStr = user ? `${user.userId} (👥 ${padZero(user.directCount)} | 🎟️ ${padZero(user.ticketCount)})` : 'Open Spot';
+    text += `${medal} Rank ${padZero(rankNum)} ➜ 🎁 ${giftName}\n   ➜ ${userStr}\n\n`;
+  });
+
+  text += `━━━━━━━━━━━━━━━━━━━━\n`;
+  text += `💵 11th to 20th ➜ E-WALLET ₹500 (10 Winners)\n`;
+  text += `💵 21st to 40th ➜ E-WALLET ₹250 (20 Winners)\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += `👕 SPECIAL OFFER: 1ST 5 DIRECT ME T-SHIRT FREE!\n`;
+  text += `🎟️ TICKET RULE: JITNE BHI BAR 5 DIRECT HOGA, HAR 5 DIRECT ME 1 TICKET MILEGA!\n`;
+  text += `🔥 Jis k pas jada ticket hoga wo lucky draw me ye sab prizes win kar sakta hai!\n\n`;
+  text += `❤️ SMARTPAY360\n`;
+  text += `✨ KEEP ACHIEVING • KEEP GROWING ✨\n`;
+
+  return text;
+}
+
 export function loadUsersFromStorage(): LeaderboardUser[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
