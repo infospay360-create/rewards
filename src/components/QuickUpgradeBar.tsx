@@ -1,0 +1,359 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserCheck, Ticket, Sparkles, Check, ArrowUpRight, Plus, UserPlus, Zap, Lock, ShieldCheck } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { LeaderboardUser } from '../types';
+import { calculateTickets, calculateProgressToNextTicket } from '../utils/leaderboardUtils';
+
+interface QuickUpgradeBarProps {
+  isAdmin: boolean;
+  onOpenLogin: () => void;
+  users: LeaderboardUser[];
+  onUpgradeUser: (data: { userId: string; name?: string; directCount: number; isAdditive?: boolean }) => {
+    isNew: boolean;
+    oldTickets: number;
+    newTickets: number;
+    newRank: number;
+  };
+}
+
+export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
+  isAdmin,
+  onOpenLogin,
+  users,
+  onUpgradeUser,
+}) => {
+  const [userIdInput, setUserIdInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
+  const [directValue, setDirectValue] = useState<number>(1);
+  const [mode, setMode] = useState<'add' | 'set'>('add');
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'ticket' | 'info';
+  } | null>(null);
+
+  // Auto-search existing user when typing user ID
+  const existingUser = useMemo(() => {
+    const trimmed = userIdInput.trim().toUpperCase();
+    if (!trimmed) return null;
+    return users.find((u) => u.userId.toUpperCase() === trimmed) || null;
+  }, [userIdInput, users]);
+
+  // Sync name input when an existing user is detected
+  useEffect(() => {
+    if (existingUser && !nameInput) {
+      setNameInput(existingUser.name || '');
+    }
+  }, [existingUser]);
+
+  // Calculate prospective new direct count and prospective tickets
+  const currentDirects = existingUser ? existingUser.directCount : 0;
+  const prospectiveDirects = mode === 'add' ? currentDirects + (Number(directValue) || 0) : Number(directValue) || 0;
+  const prospectiveTickets = calculateTickets(prospectiveDirects, existingUser?.customTicketBonus || 0);
+  const prospectiveCurrentTickets = existingUser ? existingUser.ticketCount : 0;
+  const willGainTicket = prospectiveTickets > prospectiveCurrentTickets;
+  const { needed } = calculateProgressToNextTicket(prospectiveDirects);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      onOpenLogin();
+      return;
+    }
+
+    const cleanId = userIdInput.trim().toUpperCase();
+    if (!cleanId) return;
+
+    const result = onUpgradeUser({
+      userId: cleanId,
+      name: nameInput.trim() || undefined,
+      directCount: Number(directValue) || 0,
+      isAdditive: mode === 'add',
+    });
+
+    // Fire celebratory confetti if tickets increased or new ticket unlocked
+    if (result.newTickets > result.oldTickets) {
+      confetti({
+        particleCount: 85,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
+      });
+      setNotification({
+        message: `🎉 🎟️ NEW TICKET UNLOCKED! ${cleanId} now has ${result.newTickets} Tickets & is Rank #${result.newRank}!`,
+        type: 'ticket',
+      });
+    } else {
+      setNotification({
+        message: `✅ ${cleanId} upgraded! Total Directs: ${mode === 'add' ? currentDirects + directValue : directValue} (Rank #${result.newRank})`,
+        type: 'success',
+      });
+    }
+
+    // Auto clear notification after 4.5s
+    setTimeout(() => {
+      setNotification(null);
+    }, 4500);
+
+    // If added, reset direct value to 1 for quick subsequent adds
+    if (mode === 'add') {
+      setDirectValue(1);
+    }
+  };
+
+  const handleSelectQuickId = (id: string) => {
+    setUserIdInput(id);
+    const target = users.find((u) => u.userId === id);
+    if (target) {
+      setNameInput(target.name || '');
+    }
+  };
+
+  // If user is not admin, show locked status bar with one-click login
+  if (!isAdmin) {
+    return (
+      <div
+        id="quick-upgrade-section"
+        className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-5 sm:p-6 shadow-xl mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+            <Lock className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <span>Admin Management Panel</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                LOCKED
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              User ID add karne aur direct/tickets update karne ke liye Admin Login kijiye. Baki visitors apna rank upar check kar sakte hain.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenLogin}
+          className="whitespace-nowrap px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 shadow-lg shadow-orange-500/20 active:scale-95 transition cursor-pointer flex items-center justify-center gap-1.5"
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Login to Admin Panel</span>
+        </button>
+      </div>
+    );
+  }
+
+  // Admin View (Unlocked)
+  return (
+    <div
+      id="quick-upgrade-section"
+      className="relative rounded-2xl bg-gradient-to-br from-slate-800/95 via-slate-850 to-slate-900 border border-amber-500/50 p-4 sm:p-6 shadow-2xl mb-8 backdrop-blur-md"
+    >
+      {/* Header of the quick update widget */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-700/60">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400">
+            <Zap className="w-4 h-4 fill-current" />
+          </div>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <span>👑 Admin Management Panel</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ACTIVE ADMIN
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              New User ID add karo, direct badhao — System automatically 5 direct par 1 ticket generate karega!
+            </p>
+          </div>
+        </div>
+
+        {/* Mode switcher: Add to existing vs Set total */}
+        <div className="flex items-center p-1 bg-slate-900/80 rounded-xl border border-slate-700/80 text-xs">
+          <button
+            type="button"
+            onClick={() => setMode('add')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+              mode === 'add'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Directs (+N)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('set')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+              mode === 'set'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>Set Total Directs</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
+          {/* User ID field */}
+          <div className="sm:col-span-4">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>User ID (SPAY...)</span>
+              {existingUser && (
+                <span className="text-[10px] text-emerald-400 font-normal">
+                  Found: {existingUser.directCount} Directs | {existingUser.ticketCount} Tickets
+                </span>
+              )}
+            </label>
+            <div className="relative">
+              <input
+                id="input-user-id"
+                type="text"
+                placeholder="e.g. SPAY411819 or New ID"
+                value={userIdInput}
+                onChange={(e) => setUserIdInput(e.target.value)}
+                required
+                className="w-full pl-3.5 pr-8 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+              />
+              {existingUser && (
+                <Check className="w-4 h-4 text-emerald-400 absolute right-3 top-3" />
+              )}
+            </div>
+          </div>
+
+          {/* User Name field (optional) */}
+          <div className="sm:col-span-3">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              User Name (Optional)
+            </label>
+            <input
+              id="input-user-name"
+              type="text"
+              placeholder="e.g. Rajesh Sharma"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+            />
+          </div>
+
+          {/* Direct count field + quick increment buttons */}
+          <div className="sm:col-span-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-300">
+                {mode === 'add' ? 'Directs to Add (+)' : 'New Total Directs'}
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setDirectValue(1)}
+                  className="px-1.5 py-0.5 rounded bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  +1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirectValue(2)}
+                  className="px-1.5 py-0.5 rounded bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  +2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirectValue(5)}
+                  className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer font-bold"
+                >
+                  +5 (1 Ticket)
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="input-direct-count"
+                type="number"
+                min="0"
+                max="1000"
+                value={directValue}
+                onChange={(e) => setDirectValue(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                required
+                className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+              />
+              <button
+                id="btn-submit-upgrade"
+                type="submit"
+                className="whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 hover:brightness-110 shadow-lg shadow-orange-500/20 active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
+                <span>{existingUser ? 'Upgrade User' : 'Add New User'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Calculation & Preview strip */}
+        <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-700/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-slate-400">System Auto-Calculation:</span>
+            <span className="font-semibold text-white">
+              👥 New Total Directs: <span className="text-emerald-400 font-mono font-bold">{prospectiveDirects}</span>
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="font-semibold text-white flex items-center gap-1">
+              🎟️ Auto Tickets: <span className="text-amber-400 font-mono font-bold">{prospectiveTickets}</span>
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-400">
+              Next Ticket in: <span className="text-indigo-300 font-bold">{needed} more direct(s)</span>
+            </span>
+          </div>
+
+          {willGainTicket && (
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Qualifies for +{prospectiveTickets - prospectiveCurrentTickets} New Ticket!</span>
+            </div>
+          )}
+        </div>
+
+        {/* Quick select buttons for existing leaders in contest */}
+        <div className="flex items-center gap-2 pt-1 overflow-x-auto text-[11px] pb-1 scrollbar-thin">
+          <span className="text-slate-400 whitespace-nowrap">Quick Pick ID:</span>
+          {users.slice(0, 10).map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => handleSelectQuickId(u.userId)}
+              className="px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 font-mono whitespace-nowrap transition cursor-pointer"
+            >
+              {u.userId} ({u.directCount})
+            </button>
+          ))}
+        </div>
+      </form>
+
+      {/* Floating or inline notification banner */}
+      {notification && (
+        <div
+          className={`mt-4 p-3 rounded-xl border text-xs font-semibold flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200 ${
+            notification.type === 'ticket'
+              ? 'bg-amber-950/80 border-amber-500/60 text-amber-300'
+              : 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300'
+          }`}
+        >
+          <span>{notification.message}</span>
+          <button
+            type="button"
+            onClick={() => setNotification(null)}
+            className="text-slate-400 hover:text-white ml-2 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
