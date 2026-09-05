@@ -21,10 +21,10 @@ export const NoticeBanner: React.FC = () => {
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-                🎯 LUCKY DRAW RULES: 👥 EVERY 5 DIRECT ➜ 🎟️ 1 TICKET
+                🎯 LUCKY DRAW RULES: 👥 EVERY 5 DIRECTS ➜ 🎟️ 1 TICKET
               </h3>
               <p className="text-xs sm:text-sm text-slate-300">
-                Jitne bhi bar 5 direct hoga, har 5 direct me 1 ticket milega! <strong>1st 5 direct me Free T-Shirt!</strong> Jis k pas jada tickets honge, wo Lucky Draw me 40 Mega Prizes (10 Real Gifts + 30 E-Wallets) win kar sakta hai!
+                Every 5 direct referrals awards 1 Lucky Draw ticket! <strong>Earn a Free Branded T-Shirt on your 1st 5 directs!</strong> Members with the most tickets increase their chances to win 40 Mega Lucky Draw Prizes (10 Real Gifts + 30 E-Wallets)!
               </p>
             </div>
           </div>
@@ -42,7 +42,7 @@ export const NoticeBanner: React.FC = () => {
       {/* Notice & Motivation Card */}
       <div className="rounded-2xl bg-slate-900/70 border border-slate-800 p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-          {/* Official Disclaimer in Hindi & English as provided in prompt */}
+          {/* Official Disclaimer in English */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
               <AlertCircle className="w-4 h-4" />
@@ -51,15 +51,15 @@ export const NoticeBanner: React.FC = () => {
             <ul className="space-y-1.5 text-xs sm:text-sm text-slate-300">
               <li className="flex items-center gap-2">
                 <span className="text-sky-400">🔹</span>
-                <span>यह केवल <strong>CURRENT PERFORMANCE UPDATE</strong> है।</span>
+                <span>This display is strictly a <strong>CURRENT PERFORMANCE UPDATE</strong>.</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-sky-400">🔹</span>
-                <span>यह <strong>FINAL WINNER LIST</strong> नहीं है।</span>
+                <span>This is <strong>NOT THE FINAL WINNER LIST</strong>.</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-sky-400">🔹</span>
-                <span>Performance के अनुसार ranking live बदलती रहेगी।</span>
+                <span>Rankings update dynamically in real time based on active direct referrals.</span>
               </li>
             </ul>
           </div>
@@ -68,7 +68,7 @@ export const NoticeBanner: React.FC = () => {
           <div className="rounded-xl bg-slate-950/80 p-4 border border-slate-800 text-center space-y-2">
             <div className="text-xs sm:text-sm font-black text-white flex items-center justify-center gap-2">
               <Rocket className="w-4 h-4 text-amber-400" />
-              <span>🚀 DIRECT बढ़ाइए • TICKETS बढ़ाइए • 🏆 LEADERBOARD में TOP पर आइए!</span>
+              <span>🚀 BOOST DIRECTS • MULTIPLY TICKETS • 🏆 REACH THE TOP OF THE LEADERBOARD!</span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-1 text-rose-400">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserCheck, Ticket, Sparkles, Check, ArrowUpRight, ArrowDownRight, Plus, Minus, Trash2, Zap, Lock, ShieldCheck } from 'lucide-react';
+import { UserCheck, Ticket, Sparkles, Check, ArrowUpRight, ArrowDownRight, Plus, Minus, Zap, Lock, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LeaderboardUser } from '../types';
 import { calculateTickets, calculateProgressToNextTicket } from '../utils/leaderboardUtils';
@@ -14,7 +14,6 @@ interface QuickUpgradeBarProps {
     newTickets: number;
     newRank: number;
   };
-  onDeleteUser?: (userId: string) => void;
 }
 
 export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
@@ -22,7 +21,6 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
   onOpenLogin,
   users,
   onUpgradeUser,
-  onDeleteUser,
 }) => {
   const [userIdInput, setUserIdInput] = useState('');
   const [nameInput, setNameInput] = useState('');
@@ -129,24 +127,6 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
     }
   };
 
-  const handleDeleteCurrentSelectedUser = () => {
-    if (!existingUser || !onDeleteUser) return;
-    if (
-      window.confirm(
-        `Kya aap User ID ${existingUser.userId} (${existingUser.name || 'Member'}) ko leaderboard se DELETE / MINUS karna chahte hain?`
-      )
-    ) {
-      onDeleteUser(existingUser.userId);
-      setUserIdInput('');
-      setNameInput('');
-      setNotification({
-        message: `🗑️ User ${existingUser.userId} has been removed from the contest.`,
-        type: 'info',
-      });
-      setTimeout(() => setNotification(null), 4000);
-    }
-  };
-
   // If user is not admin, hide completely from public middle view
   if (!isAdmin) {
     return null;
@@ -172,7 +152,7 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              New User ID add karo, direct badhao — System automatically 5 direct par 1 ticket generate karega!
+              Add new member IDs or increase direct referrals — System automatically generates 1 ticket for every 5 directs!
             </p>
           </div>
         </div>
@@ -387,17 +367,6 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold">
                 <span>⚠️ Will decrease tickets ({prospectiveCurrentTickets} ➜ {prospectiveTickets})</span>
               </div>
-            )}
-            {existingUser && onDeleteUser && (
-              <button
-                type="button"
-                onClick={handleDeleteCurrentSelectedUser}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-950/50 hover:bg-rose-900 text-rose-300 border border-rose-800/60 transition cursor-pointer flex items-center gap-1"
-                title="Delete this user completely from leaderboard"
-              >
-                <Trash2 className="w-3 h-3 text-rose-400" />
-                <span>Delete ID</span>
-              </button>
             )}
           </div>
         </div>

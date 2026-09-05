@@ -54,7 +54,7 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
             </h3>
           </div>
           <p className="text-xs text-slate-400">
-            Apna User ID enter karke apna live rank, total tickets aur 40 Lucky Draw Rewards me se apna status check karein!
+            Enter your User ID to check your live rank, total tickets, and reward eligibility in real time!
           </p>
         </div>
 

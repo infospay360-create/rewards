@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, User, Ticket, Check } from 'lucide-react';
+import { X, Save, User, Ticket, Check } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 import { calculateTickets } from '../utils/leaderboardUtils';
 
@@ -8,7 +8,6 @@ interface UserEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updated: LeaderboardUser) => void;
-  onDelete: (userId: string) => void;
 }
 
 export const UserEditModal: React.FC<UserEditModalProps> = ({
@@ -16,7 +15,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  onDelete,
 }) => {
   if (!isOpen || !user) return null;
 
@@ -144,37 +142,21 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="pt-2 flex items-center justify-between">
+          <div className="pt-2 flex items-center justify-end gap-2">
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(`Are you sure you want to remove ${user.userId}?`)) {
-                  onDelete(user.userId);
-                  onClose();
-                }
-              }}
-              className="p-2 rounded-xl text-rose-400 hover:text-white hover:bg-rose-950/60 border border-rose-900/40 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
             >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete User</span>
+              Cancel
             </button>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-orange-500/20"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Changes</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-orange-500/20"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save Changes</span>
+            </button>
           </div>
         </form>
       </div>

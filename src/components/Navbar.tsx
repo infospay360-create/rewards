@@ -62,8 +62,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Center Badges (Desktop) */}
           <div className="hidden lg:flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-500/30 text-xs">
-              <span className="text-amber-400 font-bold">💰 TOP 10 CASH:</span>
-              <span className="font-extrabold text-white">₹10,750 Pool</span>
+              <span className="text-amber-400 font-bold">💰 TOP 10:</span>
+              <span className="font-extrabold text-white">Cash Rewards Prize Pool</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300">
               <Ticket className="w-3.5 h-3.5 text-emerald-400" />

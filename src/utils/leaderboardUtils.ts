@@ -142,11 +142,11 @@ export function generateWhatsAppBroadcast(users: LeaderboardUser[]): string {
   text += `━━━━━━━━━━━━━━━━━━━━\n`;
   text += `⚠️ IMPORTANT NOTICE\n`;
   text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-  text += `🔹 यह केवल CURRENT PERFORMANCE UPDATE है।\n`;
-  text += `🔹 यह FINAL WINNER LIST नहीं है।\n`;
-  text += `🔹 Performance के अनुसार ranking बदलती रहेगी।\n\n`;
-  text += `🚀 DIRECT बढ़ाइए • TICKETS बढ़ाइए • CASH जीतिए\n`;
-  text += `🏆 LEADERBOARD में TOP पर आइए!\n\n`;
+  text += `🔹 This is strictly a CURRENT PERFORMANCE UPDATE.\n`;
+  text += `🔹 This is NOT THE FINAL WINNER LIST.\n`;
+  text += `🔹 Rankings update in real time based on active direct referrals.\n\n`;
+  text += `🚀 BOOST DIRECTS • MULTIPLY TICKETS • WIN CASH\n`;
+  text += `🏆 REACH THE TOP OF THE LEADERBOARD!\n\n`;
   text += `❤️ SMARTPAY360\n`;
   text += `✨ KEEP ACHIEVING • KEEP GROWING ✨\n`;
 
@@ -160,7 +160,7 @@ export function generateTop10CashBroadcast(users: LeaderboardUser[]): string {
 
   let text = `🔥🏆 SMARTPAY360 | TOP 10 CASH 🏆🔥\n\n`;
   text += `💎 PERFORM • RANK • WIN!\n`;
-  text += `🚀 TOP 10 में जगह बनाइए और पाइए शानदार CASH! 💰\n\n`;
+  text += `🚀 Secure your rank in the Top 10 to earn guaranteed CASH prizes! 💰\n\n`;
   text += `╔══════════════════════════╗\n`;
   text += `💰 TOP 10 CASH DISTRIBUTION (${dateStr})\n`;
   text += `╚══════════════════════════╝\n\n`;
@@ -175,8 +175,8 @@ export function generateTop10CashBroadcast(users: LeaderboardUser[]): string {
   });
 
   text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-  text += `🔥 TOP 10 में आइए • CASH जीतिए •\n`;
-  text += `👥 5 DIRECT ➜ 🎟️ 1 TICKET\n\n`;
+  text += `🔥 ENTER THE TOP 10 • WIN GUARANTEED CASH •\n`;
+  text += `👥 5 DIRECTS ➜ 🎟️ 1 TICKET\n\n`;
   text += `❤️ SMARTPAY360\n`;
   text += `✨ KEEP ACHIEVING • KEEP GROWING ✨\n`;
 
@@ -201,7 +201,7 @@ export function generateLuckyDraw40Broadcast(users: LeaderboardUser[]): string {
     'FASTRACK SUNGLASSES',
   ];
 
-  let text = `🪔🏆 SMARTPAY360 | DURGA PUJA & DIWALI LUCKY DRAW 🏆🪔\n\n`;
+  let text = `🪔🏆 SMARTPAY360 | FESTIVE LUCKY DRAW 🏆🪔\n\n`;
   text += `ACHIEVE MORE • EARN MORE • WIN BIG!\n`;
   text += `🎁 TOTAL 40 MEGA PRIZES • 1 SEP TO 31 OCT\n\n`;
   text += `╔══════════════════════════╗\n`;
@@ -221,9 +221,9 @@ export function generateLuckyDraw40Broadcast(users: LeaderboardUser[]): string {
   text += `💵 11th to 20th ➜ E-WALLET ₹500 (10 Winners)\n`;
   text += `💵 21st to 40th ➜ E-WALLET ₹250 (20 Winners)\n`;
   text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-  text += `👕 SPECIAL OFFER: 1ST 5 DIRECT ME T-SHIRT FREE!\n`;
-  text += `🎟️ TICKET RULE: JITNE BHI BAR 5 DIRECT HOGA, HAR 5 DIRECT ME 1 TICKET MILEGA!\n`;
-  text += `🔥 Jis k pas jada ticket hoga wo lucky draw me ye sab prizes win kar sakta hai!\n\n`;
+  text += `👕 SPECIAL OFFER: FREE BRANDED T-SHIRT ON 1ST 5 DIRECTS!\n`;
+  text += `🎟️ TICKET RULE: EVERY 5 DIRECTS EARNS 1 LUCKY DRAW TICKET!\n`;
+  text += `🔥 Members with higher ticket counts have greater chances to win these mega prizes!\n\n`;
   text += `❤️ SMARTPAY360\n`;
   text += `✨ KEEP ACHIEVING • KEEP GROWING ✨\n`;
 

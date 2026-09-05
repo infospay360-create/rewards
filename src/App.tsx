@@ -184,18 +184,6 @@ export default function App() {
     });
   }, []);
 
-  // Delete user
-  const handleDeleteUser = useCallback(
-    (userId: string) => {
-      setUsers((prev) => {
-        const list = prev.filter((u) => u.userId !== userId);
-        return sortLeaderboard(list);
-      });
-      showToast(`🗑️ User ${userId} successfully removed from leaderboard.`);
-    },
-    [showToast]
-  );
-
   // Reset to the initial 26 members
   const handleResetData = useCallback(() => {
     if (!isAdmin) {
@@ -260,7 +248,6 @@ export default function App() {
             onOpenLogin={() => setIsLoginModalOpen(true)}
             users={users}
             onUpgradeUser={handleUpgradeUser}
-            onDeleteUser={handleDeleteUser}
           />
         )}
 
@@ -284,7 +271,6 @@ export default function App() {
           onEditUser={(u) => {
             if (isAdmin) setEditingUser(u);
           }}
-          onDeleteUser={handleDeleteUser}
         />
 
         {/* Rules & Contest Notice */}
@@ -333,7 +319,6 @@ export default function App() {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         onSave={handleSaveEditedUser}
-        onDelete={handleDeleteUser}
       />
     </div>
   );

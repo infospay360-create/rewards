@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flame, Trophy, Coins, Sparkles, Award } from 'lucide-react';
 import { LeaderboardUser } from '../types';
-import { TOP_10_CASH_PRIZES, TOTAL_CASH_POOL } from '../utils/leaderboardUtils';
+import { TOP_10_CASH_PRIZES } from '../utils/leaderboardUtils';
 
 interface Top10CashBannerProps {
   users: LeaderboardUser[];
@@ -30,21 +30,21 @@ export const Top10CashBanner: React.FC<Top10CashBannerProps> = ({ users }) => {
             <span>🔥🏆 SMARTPAY360 | TOP 10 CASH 🏆🔥</span>
           </h2>
           <p className="text-xs sm:text-sm text-amber-200/90 font-medium mt-1">
-            🚀 TOP 10 में जगह बनाइए और पाइए शानदार CASH! 💰 Jis k sabse jyada direct & ticket, wo top par!
+            🚀 Secure your rank in the Top 10 to earn guaranteed CASH prizes! 💰 Leaders with the highest direct count & tickets take the lead!
           </p>
         </div>
 
-        {/* Total Cash Pool Badge */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 shrink-0 shadow-lg">
+        {/* Cash Rewards Prize Pool Badge */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40 shrink-0 shadow-lg">
           <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30">
             <Coins className="w-7 h-7 text-amber-400" />
           </div>
           <div>
             <span className="text-[11px] font-bold text-amber-300/80 block uppercase tracking-wider">
-              Total Cash Prize Pool
+              Top 10 Contest
             </span>
-            <span className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">
-              ₹{TOTAL_CASH_POOL.toLocaleString('en-IN')} CASH
+            <span className="text-lg sm:text-xl font-black text-amber-300 tracking-tight block">
+              Cash Rewards Prize Pool
             </span>
           </div>
         </div>

@@ -63,7 +63,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
         title: 'E-WALLET ₹500',
         category: 'wallet_500',
         categoryLabel: '💵 E-Wallet Cash',
-        detail: `Winner #${i} को ₹500 SmartPay360 वॉलेट कैश क्रेडिट`,
+        detail: `Winner #${i} receives ₹500 SmartPay360 wallet cash credit`,
         badgeColor: 'from-indigo-500 to-purple-500 text-white',
       });
     }
@@ -76,7 +76,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
         title: 'E-WALLET ₹250',
         category: 'wallet_250',
         categoryLabel: '💵 E-Wallet Cash',
-        detail: `Winner #${i} को ₹250 SmartPay360 वॉलेट कैश क्रेडिट`,
+        detail: `Winner #${i} receives ₹250 SmartPay360 wallet cash credit`,
         badgeColor: 'from-slate-700 to-slate-800 text-amber-300',
       });
     }
@@ -118,7 +118,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
               <Gift className="w-3.5 h-3.5" /> 40 MEGA PRIZES
             </span>
             <span className="text-xs font-bold text-amber-300">
-              🪔 दुर्गा पूजा और दिवाली स्पेशल लकी ड्रॉ
+              🪔 Festive Season Special Lucky Draw
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
               <Calendar className="w-3 h-3 text-amber-400" /> 1 Sep — 31 Oct
@@ -126,10 +126,10 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            🎁 स्मार्टपे360 | 40 लकी ड्रॉ रिवॉर्ड्स सूची (Lucky Draw List)
+            🎁 SMARTPAY360 | 40 Lucky Draw Rewards List
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            🎟️ <strong>नियम:</strong> जितने भी बार 5 Direct होगा, हर 5 Direct में 1 Ticket मिलेगा! जिसके पास जितने ज़्यादा Tickets होंगे, वह ये 40 Prizes जीत सकता है!
+            🎟️ <strong>Rule:</strong> Every 5 Direct referrals generates 1 Lucky Draw Ticket! Members with higher ticket counts have greater chances to win these 40 Mega Prizes!
           </p>
         </div>
 
@@ -148,7 +148,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition cursor-pointer"
-            title={isExpanded ? 'सूची समेटें' : 'पूरी सूची देखें'}
+            title={isExpanded ? 'Collapse List' : 'View Full List'}
           >
             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
@@ -166,10 +166,10 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
               </div>
               <div>
                 <span className="text-xs font-black text-amber-300 block">
-                  🎟️ 5 Direct = 1 Ticket
+                  🎟️ 5 Directs = 1 Ticket
                 </span>
                 <span className="text-[11px] text-slate-300">
-                  जितनी बार 5 direct, उतनी बार नया Lucky Draw ticket!
+                  Every 5 direct referrals adds a new Lucky Draw ticket!
                 </span>
               </div>
             </div>
@@ -184,7 +184,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                   🎁 10 Real Gifts + 30 E-Wallets
                 </span>
                 <span className="text-[11px] text-slate-300">
-                  1st से 10th बड़े गिफ्ट्स और 11th से 40th वॉलेट कैश!
+                  1st to 10th win mega home appliances; 11th to 40th receive wallet cash!
                 </span>
               </div>
             </div>
@@ -196,10 +196,10 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
               </div>
               <div>
                 <span className="text-xs font-black text-sky-300 block">
-                  👕 1st 5 Directs पर T-Shirt FREE!
+                  👕 Free T-Shirt on 1st 5 Directs!
                 </span>
                 <span className="text-[11px] text-slate-300">
-                  कंपनी ब्रांडेड ड्राई-फ़िट एथलेटिक टी-शर्ट मुफ़्त!
+                  Official SmartPay360 athletic branded dry-fit T-shirt!
                 </span>
               </div>
             </div>
@@ -218,7 +218,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                सभी 40 रिवॉर्ड्स ({all40Prizes.length})
+                All 40 Rewards ({all40Prizes.length})
               </button>
               <button
                 type="button"
@@ -229,7 +229,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>🎁</span> Top 10 रियल गिफ्ट्स (10)
+                <span>🎁</span> Top 10 Real Gifts (10)
               </button>
               <button
                 type="button"
@@ -262,7 +262,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <span>👕</span> टी-शर्ट ऑफर
+                <span>👕</span> Free T-Shirt Offer
               </button>
             </div>
 
@@ -273,7 +273,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="रिवॉर्ड खोजें (जैसे cycle, mixer)..."
+                placeholder="Search rewards (e.g. cycle, mixer)..."
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
               />
             </div>
@@ -294,7 +294,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                     {SPECIAL_TSHIRT_OFFER.title}
                   </h3>
                   <p className="text-xs text-slate-300">
-                    शर्त: 1st 5 Directs पूरा करने वाले हर सदस्य को SmartPay360 की ब्रांडेड टी-शर्ट मुफ़्त!
+                    Requirement: Complete your first 5 direct referrals to receive an official SmartPay360 branded T-shirt!
                   </p>
                 </div>
               </div>
@@ -313,7 +313,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {filteredPrizes.length === 0 ? (
                 <div className="col-span-full py-8 text-center text-slate-400 text-xs">
-                  कोई रिवॉर्ड नहीं मिला। कृपया दूसरा शब्द खोजें।
+                  No rewards match your search. Please try another search term.
                 </div>
               ) : (
                 filteredPrizes.map((prize) => {
@@ -372,7 +372,7 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
                             : 'bg-slate-800 text-slate-300 border border-slate-700'
                         }`}
                       >
-                        {isReal ? 'गिफ्ट' : 'वॉलेट'}
+                        {isReal ? 'Real Gift' : 'E-Wallet'}
                       </span>
                     </div>
                   );
@@ -384,10 +384,10 @@ export const LuckyDrawRewardsBanner: React.FC<LuckyDrawRewardsBannerProps> = ({ 
           {/* Footer formula note */}
           <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
             <span className="flex items-center gap-1">
-              <span>🎟️</span> <strong>फ़ॉर्मूला:</strong> 5 Direct = 1 Lucky Ticket (हर 5 डायरेक्ट पर नया टिकट)
+              <span>🎟️</span> <strong>Formula:</strong> 5 Directs = 1 Lucky Ticket (1 ticket awarded per 5 direct referrals)
             </span>
             <span className="text-amber-400 font-semibold">
-              ✨ जितनो के पास ज़्यादा टिकट, जीतने के उतने ज़्यादा चांस!
+              ✨ The more tickets you hold, the higher your chances of winning!
             </span>
           </div>
         </div>

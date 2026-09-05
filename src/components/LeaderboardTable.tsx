@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Minus, Ticket, Users, Sparkles, Edit2, Trash2, Shirt, Coins } from 'lucide-react';
+import { Search, Plus, Minus, Ticket, Users, Sparkles, Edit2, Shirt, Coins } from 'lucide-react';
 import { LeaderboardUser, FilterCategory } from '../types';
 import { getRankBadge, padZero, calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
@@ -8,7 +8,6 @@ interface LeaderboardTableProps {
   users: LeaderboardUser[];
   onQuickAddDirect: (userId: string, count?: number) => void;
   onEditUser: (user: LeaderboardUser) => void;
-  onDeleteUser?: (userId: string) => void;
 }
 
 export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
@@ -16,7 +15,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   users,
   onQuickAddDirect,
   onEditUser,
-  onDeleteUser,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
@@ -341,26 +339,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
-
-                          {/* Delete User */}
-                          {onDeleteUser && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Kya aap User ID ${user.userId} (${user.name || 'Member'}) ko leaderboard se delete/remove karna chahte hain?`
-                                  )
-                                ) {
-                                  onDeleteUser(user.userId);
-                                }
-                              }}
-                              className="p-1.5 rounded-lg text-rose-400/80 hover:text-rose-300 hover:bg-rose-950/60 border border-transparent hover:border-rose-800/50 transition cursor-pointer"
-                              title="Delete User from Leaderboard"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                         </div>
                       </td>
                     )}
