@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Ticket, Users, Sparkles, Edit2, Coins } from 'lucide-react';
+import { Search, Plus, Minus, Ticket, Users, Sparkles, Edit2, Trash2, Coins } from 'lucide-react';
 import { LeaderboardUser, FilterCategory } from '../types';
 import { getRankBadge, padZero, calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
@@ -8,6 +8,7 @@ interface LeaderboardTableProps {
   users: LeaderboardUser[];
   onQuickAddDirect: (userId: string, count?: number) => void;
   onEditUser: (user: LeaderboardUser) => void;
+  onDeleteUser?: (userId: string) => void;
 }
 
 export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
@@ -15,6 +16,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   users,
   onQuickAddDirect,
   onEditUser,
+  onDeleteUser,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
@@ -273,12 +275,28 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                     {isAdmin && (
                       <td className="py-3.5 px-4 text-right">
                         <div className="inline-flex items-center gap-1.5">
+                          {/* Quick -1 (Minus Direct) */}
+                          <button
+                            type="button"
+                            onClick={() => onQuickAddDirect(user.userId, -1)}
+                            disabled={user.directCount <= 0}
+                            className={`px-2 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-0.5 ${
+                              user.directCount <= 0
+                                ? 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed'
+                                : 'bg-rose-600/20 text-rose-300 border-rose-500/30 hover:bg-rose-600 hover:text-white cursor-pointer'
+                            }`}
+                            title="Minus 1 Direct (-1)"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                            <span>-1</span>
+                          </button>
+
                           {/* Quick +1 */}
                           <button
                             type="button"
                             onClick={() => onQuickAddDirect(user.userId, 1)}
                             className="px-2 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white transition cursor-pointer flex items-center gap-0.5"
-                            title="Add 1 Direct"
+                            title="Add 1 Direct (+1)"
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span>+1</span>
@@ -304,6 +322,26 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Delete User */}
+                          {onDeleteUser && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Kya aap User ID ${user.userId} (${user.name || 'Member'}) ko leaderboard se delete/remove karna chahte hain?`
+                                  )
+                                ) {
+                                  onDeleteUser(user.userId);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-rose-400/80 hover:text-rose-300 hover:bg-rose-950/60 border border-transparent hover:border-rose-800/50 transition cursor-pointer"
+                              title="Delete User from Leaderboard"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}

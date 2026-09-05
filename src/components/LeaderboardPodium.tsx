@@ -1,12 +1,12 @@
 import React from 'react';
-import { Trophy, Plus, Coins } from 'lucide-react';
+import { Trophy, Plus, Minus, Coins } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 import { calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
 interface LeaderboardPodiumProps {
   isAdmin: boolean;
   topThree: LeaderboardUser[];
-  onQuickAddDirect: (userId: string) => void;
+  onQuickAddDirect: (userId: string, count?: number) => void;
   onSelectUser: (user: LeaderboardUser) => void;
 }
 
@@ -103,20 +103,39 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
             </div>
           </div>
 
-          {/* Quick add button (Admin only) */}
+          {/* Quick adjust buttons (Admin only) */}
           {isAdmin && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickAddDirect(user.userId);
-              }}
-              className="mt-3 w-full py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 border border-slate-700 hover:border-emerald-500 transition flex items-center justify-center gap-1 cursor-pointer"
-              title="Add +1 direct to this user"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
-              <span>+1 Direct</span>
-            </button>
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAddDirect(user.userId, 1);
+                }}
+                className="py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 border border-slate-700 hover:border-emerald-500 transition flex items-center justify-center gap-1 cursor-pointer"
+                title="Add +1 direct to this user"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                <span>+1 Direct</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAddDirect(user.userId, -1);
+                }}
+                disabled={user.directCount <= 0}
+                className={`py-1.5 rounded-lg text-xs font-semibold border transition flex items-center justify-center gap-1 ${
+                  user.directCount <= 0
+                    ? 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed'
+                    : 'bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-300 border-slate-700 hover:border-rose-500 cursor-pointer'
+                }`}
+                title="Minus -1 direct from this user"
+              >
+                <Minus className="w-3.5 h-3.5 text-rose-400" />
+                <span>-1 Direct</span>
+              </button>
+            </div>
           )}
         </div>
 

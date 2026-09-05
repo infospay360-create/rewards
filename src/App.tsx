@@ -132,7 +132,7 @@ export default function App() {
       if (!target) return;
 
       const oldTickets = target.ticketCount;
-      const newDirect = target.directCount + count;
+      const newDirect = Math.max(0, target.directCount + count);
       const newTickets = calculateTickets(newDirect, target.customTicketBonus || 0);
 
       const updatedList = users.map((u) => {
@@ -152,7 +152,7 @@ export default function App() {
 
       const newRank = sorted.findIndex((u) => u.userId === userId) + 1;
 
-      if (newTickets > oldTickets) {
+      if (count > 0 && newTickets > oldTickets) {
         confetti({
           particleCount: 80,
           spread: 80,
@@ -161,6 +161,10 @@ export default function App() {
         });
         showToast(
           `🎉 🎟️ NEW TICKET UNLOCKED! ${userId} reached ${newDirect} Directs (${newTickets} Tickets, Rank #${newRank})!`
+        );
+      } else if (count < 0) {
+        showToast(
+          `🔻 ${userId}: ${count} Direct! Total Directs: ${newDirect} (${newTickets} Tickets, Rank #${newRank})`
         );
       } else {
         showToast(
@@ -180,12 +184,16 @@ export default function App() {
   }, []);
 
   // Delete user
-  const handleDeleteUser = useCallback((userId: string) => {
-    setUsers((prev) => {
-      const list = prev.filter((u) => u.userId !== userId);
-      return sortLeaderboard(list);
-    });
-  }, []);
+  const handleDeleteUser = useCallback(
+    (userId: string) => {
+      setUsers((prev) => {
+        const list = prev.filter((u) => u.userId !== userId);
+        return sortLeaderboard(list);
+      });
+      showToast(`🗑️ User ${userId} successfully removed from leaderboard.`);
+    },
+    [showToast]
+  );
 
   // Reset to the initial 26 members
   const handleResetData = useCallback(() => {
@@ -247,6 +255,7 @@ export default function App() {
           onOpenLogin={() => setIsLoginModalOpen(true)}
           users={users}
           onUpgradeUser={handleUpgradeUser}
+          onDeleteUser={handleDeleteUser}
         />
 
         {/* Top 3 Podium Highlights with Cash Badges */}
@@ -254,7 +263,7 @@ export default function App() {
           <LeaderboardPodium
             isAdmin={isAdmin}
             topThree={topThree}
-            onQuickAddDirect={(id) => handleQuickAddDirect(id, 1)}
+            onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
             onSelectUser={(u) => {
               if (isAdmin) setEditingUser(u);
             }}
@@ -269,6 +278,7 @@ export default function App() {
           onEditUser={(u) => {
             if (isAdmin) setEditingUser(u);
           }}
+          onDeleteUser={handleDeleteUser}
         />
 
         {/* Rules & Contest Notice */}
