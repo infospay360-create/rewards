@@ -115,7 +115,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               <span>Default Login: </span>
               <span className="font-mono text-amber-300 font-bold">admin</span>
               <span className="text-slate-500"> / </span>
-              <span className="font-mono text-amber-300 font-bold">admin360</span>
+              <span className="font-mono text-amber-300 font-bold">admin</span>
             </div>
             <button
               type="button"
