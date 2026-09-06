@@ -164,7 +164,7 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-400" />
-          <span>Top Podium Leaders (Cash Winners)</span>
+          <span>Top Position Leaders (Cash Winners)</span>
         </h3>
         <span className="text-xs text-amber-400 font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
           Rank #1 to #3 Cash Positions
