@@ -259,23 +259,34 @@ export function saveUsersToStorage(users: LeaderboardUser[]): void {
 // Server API Synchronization Helpers (Cross-device, multi-browser persistence)
 export async function fetchUsersFromApi(): Promise<LeaderboardUser[] | null> {
   try {
-    const res = await fetch('/api/users');
+    const timestamp = Date.now();
+    const res = await fetch(`/api/users?_t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+      },
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) {
       return sortLeaderboard(data);
     }
   } catch (err) {
-    console.warn('[API] Failed to fetch users from server, falling back to local store:', err);
+    console.warn('[API] Failed to fetch users from server:', err);
   }
   return null;
 }
 
 export async function syncUsersToApi(users: LeaderboardUser[]): Promise<boolean> {
   try {
-    const res = await fetch('/api/users', {
+    const res = await fetch(`/api/users?_t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
       body: JSON.stringify(users),
     });
     return res.ok;
@@ -292,9 +303,13 @@ export async function upgradeUserOnApi(data: {
   isAdditive?: boolean;
 }): Promise<{ success: boolean; users?: LeaderboardUser[]; isNew?: boolean; newRank?: number } | null> {
   try {
-    const res = await fetch('/api/users/upgrade', {
+    const res = await fetch(`/api/users/upgrade?_t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
       body: JSON.stringify(data),
     });
     if (res.ok) {
@@ -308,9 +323,13 @@ export async function upgradeUserOnApi(data: {
 
 export async function editUserOnApi(user: LeaderboardUser): Promise<LeaderboardUser[] | null> {
   try {
-    const res = await fetch('/api/users/edit', {
+    const res = await fetch(`/api/users/edit?_t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
       body: JSON.stringify(user),
     });
     if (res.ok) {
@@ -325,9 +344,13 @@ export async function editUserOnApi(user: LeaderboardUser): Promise<LeaderboardU
 
 export async function resetUsersOnApi(): Promise<LeaderboardUser[] | null> {
   try {
-    const res = await fetch('/api/users/reset', {
+    const res = await fetch(`/api/users/reset?_t=${Date.now()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
     });
     if (res.ok) {
       const data = await res.json();
@@ -341,14 +364,14 @@ export async function resetUsersOnApi(): Promise<LeaderboardUser[] | null> {
 
 // Admin Authentication Helpers
 export const DEFAULT_ADMIN_USERNAME = 'admin';
-export const DEFAULT_ADMIN_PIN = 'admin360';
+export const DEFAULT_ADMIN_PIN = 'admin';
 
 export function verifyAdminCredentials(username: string, pin: string): boolean {
   const u = username.trim().toLowerCase();
-  const p = pin.trim();
+  const p = pin.trim().toLowerCase();
   return (
     (u === 'admin' || u === 'spay360' || u === 'smartpay360' || u === 'spay360.info@gmail.com') &&
-    (p === 'admin360' || p === '360' || p === '123456')
+    (p === 'admin' || p === 'admin360' || p === '360' || p === '123456')
   );
 }
 

@@ -9,14 +9,18 @@ import { calculateTickets, sortLeaderboard } from './src/utils/leaderboardUtils'
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// Persistent store file path
+// Persistent store file path on container filesystem
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'leaderboard-store.json');
 
-// In-memory cache
+// In-memory cache for ultra-fast response
 let cachedUsers: LeaderboardUser[] = [];
+let dataVersion = Date.now();
+
+// Set of active SSE (Server-Sent Events) client connections
+const sseClients = new Set<express.Response>();
 
 // Initialize or load data from disk
 function initStore(): void {
@@ -30,23 +34,27 @@ function initStore(): void {
       const parsed = JSON.parse(fileData);
       if (Array.isArray(parsed) && parsed.length > 0) {
         cachedUsers = sortLeaderboard(parsed);
+        dataVersion = Date.now();
         console.log(`[Store] Loaded ${cachedUsers.length} users from disk.`);
         return;
       }
     }
 
-    // Seed with initial data
+    // Seed with initial contest data
     cachedUsers = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
+    dataVersion = Date.now();
     fs.writeFileSync(DATA_FILE, JSON.stringify(cachedUsers, null, 2), 'utf-8');
     console.log(`[Store] Initialized store with ${cachedUsers.length} default users.`);
   } catch (err) {
     console.error('[Store] Error initializing store:', err);
     cachedUsers = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
+    dataVersion = Date.now();
   }
 }
 
 function persistStore(): void {
   try {
+    dataVersion = Date.now();
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
@@ -56,19 +64,102 @@ function persistStore(): void {
   }
 }
 
+// Broadcast real-time update to all connected browsers and mobile devices
+function broadcastLiveUpdate(source = 'update') {
+  const payload = JSON.stringify({
+    type: 'USERS_UPDATED',
+    source,
+    version: dataVersion,
+    count: cachedUsers.length,
+    users: cachedUsers,
+  });
+
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+}
+
 // Initialize store at startup
 initStore();
 
 // ==========================================
-// API ROUTES (Must come before Vite middleware)
+// ANTI-CACHE & CORS MIDDLEWARE FOR ALL /api
 // ==========================================
+app.use('/api', (req, res, next) => {
+  // Enforce zero caching across all browsers, mobile devices, and reverse proxies/CDNs
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', count: cachedUsers.length, timestamp: new Date().toISOString() });
+  // Cross-Origin allowance
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cache-Control, Pragma');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
-// GET all leaderboard users (synced across all devices)
+// ==========================================
+// REAL-TIME SSE (SERVER-SENT EVENTS) STREAM
+// ==========================================
+app.get('/api/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
+  res.flushHeaders();
+
+  // Send initial data immediately upon connecting
+  const initialPayload = JSON.stringify({
+    type: 'INITIAL',
+    version: dataVersion,
+    count: cachedUsers.length,
+    users: cachedUsers,
+  });
+  res.write(`data: ${initialPayload}\n\n`);
+
+  sseClients.add(res);
+
+  // Keep-alive heartbeat every 15 seconds to prevent network timeouts
+  const heartbeatTimer = setInterval(() => {
+    try {
+      res.write(': keepalive\n\n');
+    } catch {
+      clearInterval(heartbeatTimer);
+      sseClients.delete(res);
+    }
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeatTimer);
+    sseClients.delete(res);
+  });
+});
+
+// ==========================================
+// REST API ROUTES
+// ==========================================
+
+// Health check with active live client count and version
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: dataVersion,
+    count: cachedUsers.length,
+    connectedClients: sseClients.size,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// GET all leaderboard users (always returns fresh data)
 app.get('/api/users', (req, res) => {
   res.json(cachedUsers);
 });
@@ -82,12 +173,14 @@ app.post('/api/users', (req, res) => {
 
   const sanitized = incoming.map((u: LeaderboardUser) => ({
     ...u,
+    userId: (u.userId || '').trim().toUpperCase(),
     ticketCount: calculateTickets(u.directCount, u.customTicketBonus || 0),
   }));
 
   cachedUsers = sortLeaderboard(sanitized);
   persistStore();
-  res.json({ success: true, users: cachedUsers });
+  broadcastLiveUpdate('sync');
+  res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
 // POST upgrade/add user directly on server
@@ -134,21 +227,26 @@ app.post('/api/users/upgrade', (req, res) => {
 
   cachedUsers = sortLeaderboard(updatedList);
   persistStore();
+  broadcastLiveUpdate('upgrade');
 
   const newRank = cachedUsers.findIndex((u) => u.userId.toUpperCase() === cleanId) + 1;
-  res.json({ success: true, isNew, newRank, users: cachedUsers });
+  res.json({ success: true, isNew, newRank, version: dataVersion, users: cachedUsers });
 });
 
-// POST edit an existing user
+// POST edit an existing user (ID, Name, Directs, Custom Bonus)
 app.post('/api/users/edit', (req, res) => {
   const updated = req.body as LeaderboardUser;
   if (!updated || !updated.id) {
     return res.status(400).json({ error: 'Valid user object required' });
   }
 
+  const cleanId = updated.userId ? updated.userId.trim().toUpperCase() : '';
   const recalculated: LeaderboardUser = {
     ...updated,
-    userId: updated.userId ? updated.userId.trim().toUpperCase() : '',
+    userId: cleanId,
+    name: updated.name ? updated.name.trim() : `Leader ${cleanId.slice(-4)}`,
+    directCount: Math.max(0, updated.directCount || 0),
+    customTicketBonus: Math.max(0, updated.customTicketBonus || 0),
     ticketCount: calculateTickets(updated.directCount, updated.customTicketBonus || 0),
     updatedAt: new Date().toISOString(),
   };
@@ -156,14 +254,16 @@ app.post('/api/users/edit', (req, res) => {
   const list = cachedUsers.map((u) => (u.id === recalculated.id ? recalculated : u));
   cachedUsers = sortLeaderboard(list);
   persistStore();
-  res.json({ success: true, users: cachedUsers });
+  broadcastLiveUpdate('edit');
+  res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
 // POST reset to initial 26 members
 app.post('/api/users/reset', (req, res) => {
   cachedUsers = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
   persistStore();
-  res.json({ success: true, users: cachedUsers });
+  broadcastLiveUpdate('reset');
+  res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
 // ==========================================

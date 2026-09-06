@@ -43,6 +43,7 @@ export default function App() {
   const [editingUser, setEditingUser] = useState<LeaderboardUser | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
 
   // Rewards Modal state (Top 10 Cash vs 40 Lucky Draw Gifts)
   const [rewardsModalState, setRewardsModalState] = useState<{
@@ -61,14 +62,16 @@ export default function App() {
     }, 4000);
   }, []);
 
-  // Save to localStorage as quick local cache
+  // Save to localStorage as local cache
   useEffect(() => {
     saveUsersToStorage(users);
   }, [users]);
 
-  // Initial load from server & real-time background sync across all devices
+  // Initial load from server & real-time SSE + anti-cache background sync across all devices
   useEffect(() => {
     let isMounted = true;
+    let eventSource: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const syncWithServer = async (silent = true) => {
       if (!silent) setIsSyncing(true);
@@ -83,17 +86,62 @@ export default function App() {
           }
           return prev;
         });
+        setIsLiveConnected(true);
       }
       if (!silent) setIsSyncing(false);
     };
 
     // Immediate initial sync
-    syncWithServer(true);
+    syncWithServer(false);
 
-    // Continuous polling every 5 seconds so every browser automatically receives updates
+    // Setup Real-Time Server-Sent Events (SSE) stream
+    const setupSSE = () => {
+      try {
+        eventSource = new EventSource('/api/stream');
+
+        eventSource.onopen = () => {
+          if (isMounted) setIsLiveConnected(true);
+        };
+
+        eventSource.onmessage = (event) => {
+          if (!isMounted) return;
+          try {
+            const data = JSON.parse(event.data);
+            if (data && Array.isArray(data.users) && data.users.length > 0) {
+              const sorted = sortLeaderboard(data.users);
+              setUsers(sorted);
+              saveUsersToStorage(sorted);
+              setIsLiveConnected(true);
+            }
+          } catch (e) {
+            console.error('[SSE] Parse error:', e);
+          }
+        };
+
+        eventSource.onerror = () => {
+          if (isMounted) setIsLiveConnected(false);
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          if (isMounted && !reconnectTimer) {
+            reconnectTimer = setTimeout(() => {
+              reconnectTimer = null;
+              if (isMounted) setupSSE();
+            }, 3000);
+          }
+        };
+      } catch (err) {
+        console.warn('[SSE] EventSource init error:', err);
+      }
+    };
+
+    setupSSE();
+
+    // Continuous polling every 3.5 seconds with zero-cache headers for absolute reliability
     const pollInterval = setInterval(() => {
       syncWithServer(true);
-    }, 5000);
+    }, 3500);
 
     // Also sync immediately when user switches tabs or focuses browser
     const handleFocus = () => {
@@ -104,6 +152,8 @@ export default function App() {
 
     return () => {
       isMounted = false;
+      if (eventSource) eventSource.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       clearInterval(pollInterval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
@@ -337,6 +387,7 @@ export default function App() {
           onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
           onManualRefresh={handleManualRefresh}
           isSyncing={isSyncing}
+          isLiveConnected={isLiveConnected}
           totalUsers={users.length}
           totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
         />
