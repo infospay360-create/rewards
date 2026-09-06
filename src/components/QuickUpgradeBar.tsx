@@ -8,7 +8,13 @@ interface QuickUpgradeBarProps {
   isAdmin: boolean;
   onOpenLogin: () => void;
   users: LeaderboardUser[];
-  onUpgradeUser: (data: { userId: string; name?: string; directCount: number; isAdditive?: boolean }) => {
+  onUpgradeUser: (data: {
+    userId: string;
+    name?: string;
+    directCount?: number;
+    ticketCount?: number;
+    isAdditive?: boolean;
+  }) => {
     isNew: boolean;
     oldTickets: number;
     newTickets: number;
@@ -25,6 +31,7 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
   const [userIdInput, setUserIdInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [directValue, setDirectValue] = useState<number>(1);
+  const [unit, setUnit] = useState<'directs' | 'tickets'>('directs');
   const [mode, setMode] = useState<'add' | 'subtract' | 'set'>('add');
   const [notification, setNotification] = useState<{
     message: string;
@@ -47,19 +54,32 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
 
   // Calculate prospective new direct count and prospective tickets
   const currentDirects = existingUser ? existingUser.directCount : 0;
-  let prospectiveDirects = 0;
-  if (mode === 'add') {
-    prospectiveDirects = currentDirects + (Number(directValue) || 0);
-  } else if (mode === 'subtract') {
-    prospectiveDirects = Math.max(0, currentDirects - (Number(directValue) || 0));
+  const currentTickets = existingUser ? existingUser.ticketCount : 0;
+  let prospectiveDirects = currentDirects;
+  let prospectiveTickets = currentTickets;
+
+  if (unit === 'tickets') {
+    if (mode === 'add') {
+      prospectiveTickets = currentTickets + (Number(directValue) || 0);
+    } else if (mode === 'subtract') {
+      prospectiveTickets = Math.max(0, currentTickets - (Number(directValue) || 0));
+    } else {
+      prospectiveTickets = Math.max(0, Number(directValue) || 0);
+    }
+    prospectiveDirects = currentDirects;
   } else {
-    prospectiveDirects = Math.max(0, Number(directValue) || 0);
+    if (mode === 'add') {
+      prospectiveDirects = currentDirects + (Number(directValue) || 0);
+    } else if (mode === 'subtract') {
+      prospectiveDirects = Math.max(0, currentDirects - (Number(directValue) || 0));
+    } else {
+      prospectiveDirects = Math.max(0, Number(directValue) || 0);
+    }
+    prospectiveTickets = calculateTickets(prospectiveDirects, existingUser?.customTicketBonus || 0);
   }
 
-  const prospectiveTickets = calculateTickets(prospectiveDirects, existingUser?.customTicketBonus || 0);
-  const prospectiveCurrentTickets = existingUser ? existingUser.ticketCount : 0;
-  const willGainTicket = prospectiveTickets > prospectiveCurrentTickets;
-  const willLoseTicket = prospectiveTickets < prospectiveCurrentTickets;
+  const willGainTicket = prospectiveTickets > currentTickets;
+  const willLoseTicket = prospectiveTickets < currentTickets;
   const { needed } = calculateProgressToNextTicket(prospectiveDirects);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,17 +92,33 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
     const cleanId = userIdInput.trim().toUpperCase();
     if (!cleanId) return;
 
-    const countToApply =
-      mode === 'subtract'
-        ? -Math.abs(Number(directValue) || 0)
-        : Math.abs(Number(directValue) || 0);
+    let result: { isNew: boolean; oldTickets: number; newTickets: number; newRank: number };
 
-    const result = onUpgradeUser({
-      userId: cleanId,
-      name: nameInput.trim() || undefined,
-      directCount: mode === 'set' ? Math.max(0, Number(directValue) || 0) : countToApply,
-      isAdditive: mode !== 'set',
-    });
+    if (unit === 'tickets') {
+      const ticketsToApply =
+        mode === 'subtract'
+          ? -Math.abs(Number(directValue) || 0)
+          : Math.abs(Number(directValue) || 0);
+
+      result = onUpgradeUser({
+        userId: cleanId,
+        name: nameInput.trim() || undefined,
+        ticketCount: mode === 'set' ? Math.max(0, Number(directValue) || 0) : ticketsToApply,
+        isAdditive: mode !== 'set',
+      });
+    } else {
+      const countToApply =
+        mode === 'subtract'
+          ? -Math.abs(Number(directValue) || 0)
+          : Math.abs(Number(directValue) || 0);
+
+      result = onUpgradeUser({
+        userId: cleanId,
+        name: nameInput.trim() || undefined,
+        directCount: mode === 'set' ? Math.max(0, Number(directValue) || 0) : countToApply,
+        isAdditive: mode !== 'set',
+      });
+    }
 
     // Fire celebratory confetti if tickets increased or new ticket unlocked
     if (result.newTickets > result.oldTickets) {
@@ -98,12 +134,12 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
       });
     } else if (mode === 'subtract') {
       setNotification({
-        message: `🔻 ${cleanId} updated: Directs reduced by ${directValue}. Total Directs: ${prospectiveDirects} (${result.newTickets} Tickets, Rank #${result.newRank})`,
+        message: `🔻 ${cleanId} updated: Reduced by ${directValue}. Current: ${result.newTickets} Tickets (Rank #${result.newRank})`,
         type: 'minus',
       });
     } else {
       setNotification({
-        message: `✅ ${cleanId} upgraded! Total Directs: ${prospectiveDirects} (Rank #${result.newRank})`,
+        message: `✅ ${cleanId} updated to ${result.newTickets} Tickets (Rank #${result.newRank})!`,
         type: 'success',
       });
     }
@@ -157,43 +193,79 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
           </div>
         </div>
 
-        {/* Mode switcher: Add to existing vs Subtract vs Set total */}
-        <div className="flex items-center p-1 bg-slate-900/80 rounded-xl border border-slate-700/80 text-xs gap-1">
-          <button
-            type="button"
-            onClick={() => setMode('add')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-              mode === 'add'
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add (+N)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('subtract')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-              mode === 'subtract'
-                ? 'bg-rose-500 text-white font-bold shadow-sm'
-                : 'text-slate-400 hover:text-rose-300'
-            }`}
-          >
-            <Minus className="w-3.5 h-3.5" />
-            <span>Minus (-N)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('set')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
-              mode === 'set'
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <span>Set Total</span>
-          </button>
+        {/* Mode & Unit switcher */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Unit Toggle */}
+          <div className="flex items-center p-1 bg-slate-900/90 rounded-xl border border-amber-500/30 text-xs gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setUnit('directs');
+                setDirectValue(1);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
+                unit === 'directs'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>Directs (5=1🎟️)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setUnit('tickets');
+                setDirectValue(10);
+              }}
+              className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
+                unit === 'tickets'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Ticket className="w-3.5 h-3.5" />
+              <span>Tickets (🎟️)</span>
+            </button>
+          </div>
+
+          {/* Operation Mode */}
+          <div className="flex items-center p-1 bg-slate-900/80 rounded-xl border border-slate-700/80 text-xs gap-1">
+            <button
+              type="button"
+              onClick={() => setMode('add')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                mode === 'add'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add (+N)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('subtract')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                mode === 'subtract'
+                  ? 'bg-rose-500 text-white font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-rose-300'
+              }`}
+            >
+              <Minus className="w-3.5 h-3.5" />
+              <span>Minus (-N)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('set')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${
+                mode === 'set'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>Set Total</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -241,18 +313,117 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
             />
           </div>
 
-          {/* Direct count field + quick increment/decrement buttons */}
+          {/* Direct or Ticket count field + quick increment/decrement buttons */}
           <div className="sm:col-span-5">
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-slate-300">
-                {mode === 'add'
+                {unit === 'tickets'
+                  ? mode === 'add'
+                    ? 'Tickets to Add (+🎟️)'
+                    : mode === 'subtract'
+                    ? 'Tickets to Minus (-🎟️)'
+                    : 'New Total Tickets (🎟️)'
+                  : mode === 'add'
                   ? 'Directs to Add (+)'
                   : mode === 'subtract'
                   ? 'Directs to Minus (-)'
                   : 'New Total Directs'}
               </label>
               <div className="flex items-center gap-1 text-[11px]">
-                {mode === 'subtract' ? (
+                {unit === 'tickets' ? (
+                  mode === 'set' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(0)}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white cursor-pointer font-bold font-mono"
+                      >
+                        00
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(10)}
+                        className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 cursor-pointer font-bold font-mono"
+                      >
+                        10 🎟️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(25)}
+                        className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 cursor-pointer font-bold font-mono"
+                      >
+                        25 🎟️
+                      </button>
+                    </>
+                  ) : mode === 'subtract' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(1)}
+                        className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 cursor-pointer font-bold"
+                      >
+                        -1 🎟️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(5)}
+                        className="px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-200 border border-rose-500/40 hover:bg-rose-600/40 cursor-pointer font-bold"
+                      >
+                        -5 🎟️
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(1)}
+                        className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer font-bold"
+                      >
+                        +1 🎟️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(5)}
+                        className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer font-bold"
+                      >
+                        +5 🎟️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDirectValue(10)}
+                        className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer font-bold"
+                      >
+                        +10 🎟️
+                      </button>
+                    </>
+                  )
+                ) : mode === 'set' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setDirectValue(0)}
+                      className="px-1.5 py-0.5 rounded bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      0
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectValue(50)}
+                      className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer font-bold"
+                      title="50 Directs = 10 Tickets"
+                    >
+                      50 (10 🎟️)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectValue(125)}
+                      className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 cursor-pointer font-bold"
+                      title="125 Directs = 25 Tickets"
+                    >
+                      125 (25 🎟️)
+                    </button>
+                  </>
+                ) : mode === 'subtract' ? (
                   <>
                     <button
                       type="button"
@@ -308,7 +479,7 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
                 id="input-direct-count"
                 type="number"
                 min="0"
-                max="1000"
+                max="10000"
                 value={directValue}
                 onChange={(e) => setDirectValue(Math.max(0, parseInt(e.target.value, 10) || 0))}
                 required
@@ -326,7 +497,12 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
                 {mode === 'subtract' ? (
                   <>
                     <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />
-                    <span>Minus Directs (-{directValue})</span>
+                    <span>Minus (-{directValue} {unit === 'tickets' ? '🎟️' : ''})</span>
+                  </>
+                ) : mode === 'set' ? (
+                  <>
+                    <Zap className="w-4 h-4 fill-current" />
+                    <span>Set ({directValue} {unit === 'tickets' ? '🎟️' : 'Directs'})</span>
                   </>
                 ) : (
                   <>
@@ -360,12 +536,12 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
             {willGainTicket && (
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold animate-pulse">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Qualifies for +{prospectiveTickets - prospectiveCurrentTickets} New Ticket!</span>
+                <span>Qualifies for +{prospectiveTickets - currentTickets} New Ticket!</span>
               </div>
             )}
             {willLoseTicket && (
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold">
-                <span>⚠️ Will decrease tickets ({prospectiveCurrentTickets} ➜ {prospectiveTickets})</span>
+                <span>⚠️ Will decrease tickets ({currentTickets} ➜ {prospectiveTickets})</span>
               </div>
             )}
           </div>

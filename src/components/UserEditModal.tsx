@@ -21,16 +21,38 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [userIdInput, setUserIdInput] = useState(user.userId || '');
   const [name, setName] = useState(user.name || '');
   const [directCount, setDirectCount] = useState(user.directCount);
+  const [ticketCount, setTicketCount] = useState(user.ticketCount);
   const [customBonus, setCustomBonus] = useState(user.customTicketBonus || 0);
 
   useEffect(() => {
     setUserIdInput(user.userId || '');
     setName(user.name || '');
     setDirectCount(user.directCount);
+    setTicketCount(user.ticketCount);
     setCustomBonus(user.customTicketBonus || 0);
   }, [user]);
 
-  const autoCalculatedTickets = calculateTickets(directCount, customBonus);
+  // Handle direct changes
+  const handleDirectChange = (val: number) => {
+    const d = Math.max(0, val);
+    setDirectCount(d);
+    setTicketCount(Math.floor(d / 5) + customBonus);
+  };
+
+  // Handle explicit ticket changes
+  const handleTicketChange = (val: number) => {
+    const t = Math.max(0, val);
+    setTicketCount(t);
+    const earnedFromDirects = Math.floor(directCount / 5);
+    setCustomBonus(Math.max(0, t - earnedFromDirects));
+  };
+
+  // Handle bonus changes
+  const handleBonusChange = (val: number) => {
+    const b = Math.max(0, val);
+    setCustomBonus(b);
+    setTicketCount(Math.floor(directCount / 5) + b);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +63,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       name: name.trim() || `Member ${cleanId.slice(-4)}`,
       directCount: Math.max(0, directCount),
       customTicketBonus: Math.max(0, customBonus),
-      ticketCount: autoCalculatedTickets,
+      ticketCount: Math.max(0, ticketCount),
       updatedAt: new Date().toISOString(),
     });
     onClose();
@@ -103,6 +125,63 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             />
           </div>
 
+          {/* Total Tickets Field */}
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <Ticket className="w-4 h-4" />
+                <span>Total Tickets (Ticket Count)</span>
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleTicketChange(0)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition ${
+                    ticketCount === 0
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  00
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTicketChange(10)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition ${
+                    ticketCount === 10
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTicketChange(25)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition ${
+                    ticketCount === 25
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  25
+                </button>
+              </div>
+            </div>
+            <input
+              type="number"
+              min="0"
+              max="10000"
+              value={ticketCount}
+              onChange={(e) => handleTicketChange(parseInt(e.target.value, 10) || 0)}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-amber-500/50 rounded-xl text-base font-mono font-black text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-400 transition"
+              placeholder="e.g. 10 or 25"
+            />
+            <p className="text-[11px] text-amber-400/80">
+              Admin can set Tickets directly (e.g. 00 → 10 or 10 → 25)
+            </p>
+          </div>
+
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-slate-300">
@@ -117,7 +196,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
               min="0"
               max="10000"
               value={directCount}
-              onChange={(e) => setDirectCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+              onChange={(e) => handleDirectChange(parseInt(e.target.value, 10) || 0)}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold text-white focus:outline-none focus:border-amber-400 transition"
             />
           </div>
@@ -131,7 +210,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
               min="0"
               max="100"
               value={customBonus}
-              onChange={(e) => setCustomBonus(Math.max(0, parseInt(e.target.value, 10) || 0))}
+              onChange={(e) => handleBonusChange(parseInt(e.target.value, 10) || 0)}
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold text-white focus:outline-none focus:border-amber-400 transition"
             />
             <p className="text-[11px] text-slate-500 mt-1">
@@ -141,9 +220,9 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
           {/* Real-time calculated total */}
           <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-400">Total Resulting Tickets:</span>
+            <span className="text-slate-400">Final Assigned Tickets:</span>
             <span className="font-mono font-black text-amber-400 text-sm">
-              🎟️ {autoCalculatedTickets < 10 ? `0${autoCalculatedTickets}` : autoCalculatedTickets} Tickets
+              🎟️ {ticketCount < 10 ? `0${ticketCount}` : ticketCount} Tickets
             </span>
           </div>
 

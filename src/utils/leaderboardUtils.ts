@@ -236,10 +236,17 @@ export function loadUsersFromStorage(): LeaderboardUser[] {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((u: LeaderboardUser) => ({
-          ...u,
-          ticketCount: calculateTickets(u.directCount, u.customTicketBonus || 0),
-        }));
+        return parsed.map((u: LeaderboardUser) => {
+          const directCount = Math.max(0, parseInt(String(u.directCount), 10) || 0);
+          const bonus = Math.max(0, parseInt(String(u.customTicketBonus), 10) || 0);
+          const explicitTickets = typeof u.ticketCount === 'number' && !isNaN(u.ticketCount) ? Math.max(0, Math.floor(u.ticketCount)) : null;
+          return {
+            ...u,
+            directCount,
+            customTicketBonus: bonus,
+            ticketCount: explicitTickets !== null ? explicitTickets : calculateTickets(directCount, bonus),
+          };
+        });
       }
     }
   } catch (err) {
@@ -337,7 +344,8 @@ export async function syncUsersToApi(users: LeaderboardUser[]): Promise<boolean>
 export async function upgradeUserOnApi(data: {
   userId: string;
   name?: string;
-  directCount: number;
+  directCount?: number;
+  ticketCount?: number;
   isAdditive?: boolean;
 }): Promise<{ success: boolean; users?: LeaderboardUser[]; isNew?: boolean; newRank?: number } | null> {
   try {

@@ -231,7 +231,7 @@ export default function App() {
 
   // Primary upgrade function (synchronously returns calculated results to UI and broadcasts to all clients)
   const handleUpgradeUser = useCallback(
-    (data: { userId: string; name?: string; directCount: number; isAdditive?: boolean }) => {
+    (data: { userId: string; name?: string; directCount?: number; ticketCount?: number; isAdditive?: boolean }) => {
       const cleanId = data.userId.trim().toUpperCase();
       let isNew = false;
       let oldTickets = 0;
@@ -243,15 +243,25 @@ export default function App() {
       if (existingIndex >= 0) {
         const current = users[existingIndex];
         oldTickets = current.ticketCount;
-        const newDirect = data.isAdditive
-          ? current.directCount + data.directCount
-          : data.directCount;
-        newTickets = calculateTickets(newDirect, current.customTicketBonus || 0);
+
+        let newDirect = current.directCount;
+        if (data.directCount !== undefined) {
+          newDirect = Math.max(0, data.isAdditive ? current.directCount + data.directCount : data.directCount);
+        }
+
+        let customBonus = current.customTicketBonus || 0;
+        if (data.ticketCount !== undefined) {
+          newTickets = Math.max(0, data.isAdditive ? current.ticketCount + data.ticketCount : data.ticketCount);
+          customBonus = Math.max(0, newTickets - Math.floor(newDirect / 5));
+        } else {
+          newTickets = calculateTickets(newDirect, customBonus);
+        }
 
         const updatedUser: LeaderboardUser = {
           ...current,
           name: data.name && data.name.trim() ? data.name.trim() : current.name,
-          directCount: Math.max(0, newDirect),
+          directCount: newDirect,
+          customTicketBonus: customBonus,
           ticketCount: newTickets,
           updatedAt: new Date().toISOString(),
         };
@@ -261,15 +271,23 @@ export default function App() {
       } else {
         isNew = true;
         oldTickets = 0;
-        const directs = Math.max(0, data.directCount);
-        newTickets = calculateTickets(directs);
+        const directs = Math.max(0, data.directCount || 0);
+        let tickets = 0;
+        let customBonus = 0;
+        if (data.ticketCount !== undefined) {
+          tickets = Math.max(0, data.ticketCount);
+          customBonus = Math.max(0, tickets - Math.floor(directs / 5));
+        } else {
+          tickets = calculateTickets(directs, 0);
+        }
 
         const newUser: LeaderboardUser = {
           id: `user-${Date.now()}`,
           userId: cleanId,
           name: data.name && data.name.trim() ? data.name.trim() : `Leader ${cleanId.slice(-4)}`,
           directCount: directs,
-          ticketCount: newTickets,
+          customTicketBonus: customBonus,
+          ticketCount: tickets,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

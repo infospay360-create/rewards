@@ -185,11 +185,19 @@ app.post('/api/users', (req, res) => {
     return res.status(400).json({ error: 'Expected array of users' });
   }
 
-  const sanitized = incoming.map((u: LeaderboardUser) => ({
-    ...u,
-    userId: (u.userId || '').trim().toUpperCase(),
-    ticketCount: calculateTickets(u.directCount, u.customTicketBonus || 0),
-  }));
+  const sanitized = incoming.map((u: LeaderboardUser) => {
+    const directCount = Math.max(0, parseInt(String(u.directCount), 10) || 0);
+    const customBonus = Math.max(0, parseInt(String(u.customTicketBonus), 10) || 0);
+    const explicitTickets = typeof u.ticketCount === 'number' && !isNaN(u.ticketCount) ? Math.max(0, Math.floor(u.ticketCount)) : null;
+    const computedTickets = explicitTickets !== null ? explicitTickets : calculateTickets(directCount, customBonus);
+    return {
+      ...u,
+      userId: (u.userId || '').trim().toUpperCase(),
+      directCount,
+      customTicketBonus: customBonus,
+      ticketCount: computedTickets,
+    };
+  });
 
   cachedUsers = sortLeaderboard(sanitized);
   persistStore();
@@ -199,13 +207,12 @@ app.post('/api/users', (req, res) => {
 
 // POST upgrade/add user directly on server
 app.post('/api/users/upgrade', (req, res) => {
-  const { userId, name, directCount, isAdditive } = req.body;
+  const { userId, name, directCount, ticketCount, isAdditive } = req.body;
   if (!userId || typeof userId !== 'string') {
     return res.status(400).json({ error: 'Valid userId required' });
   }
 
   const cleanId = userId.trim().toUpperCase();
-  const directNum = parseInt(directCount, 10) || 0;
   const existingIdx = cachedUsers.findIndex((u) => u.userId.toUpperCase() === cleanId);
 
   let updatedList = [...cachedUsers];
@@ -213,27 +220,55 @@ app.post('/api/users/upgrade', (req, res) => {
 
   if (existingIdx >= 0) {
     const curr = cachedUsers[existingIdx];
-    const newDirect = Math.max(0, isAdditive ? curr.directCount + directNum : directNum);
-    const newTickets = calculateTickets(newDirect, curr.customTicketBonus || 0);
+    let newDirect = curr.directCount;
+    if (directCount !== undefined && directCount !== null) {
+      const directNum = parseInt(String(directCount), 10) || 0;
+      newDirect = Math.max(0, isAdditive ? curr.directCount + directNum : directNum);
+    }
+
+    let newTickets = curr.ticketCount;
+    let customBonus = curr.customTicketBonus || 0;
+
+    if (ticketCount !== undefined && ticketCount !== null) {
+      const ticketNum = parseInt(String(ticketCount), 10) || 0;
+      newTickets = Math.max(0, isAdditive ? curr.ticketCount + ticketNum : ticketNum);
+      customBonus = Math.max(0, newTickets - Math.floor(newDirect / 5));
+    } else {
+      newTickets = calculateTickets(newDirect, customBonus);
+    }
 
     const updatedUser: LeaderboardUser = {
       ...curr,
       name: name && typeof name === 'string' && name.trim() ? name.trim() : curr.name,
       directCount: newDirect,
+      customTicketBonus: customBonus,
       ticketCount: newTickets,
       updatedAt: new Date().toISOString(),
     };
     updatedList[existingIdx] = updatedUser;
   } else {
     isNew = true;
-    const directPositive = Math.max(0, directNum);
-    const newTickets = calculateTickets(directPositive);
+    let directs = 0;
+    if (directCount !== undefined && directCount !== null) {
+      directs = Math.max(0, parseInt(String(directCount), 10) || 0);
+    }
+
+    let tickets = 0;
+    let customBonus = 0;
+    if (ticketCount !== undefined && ticketCount !== null) {
+      tickets = Math.max(0, parseInt(String(ticketCount), 10) || 0);
+      customBonus = Math.max(0, tickets - Math.floor(directs / 5));
+    } else {
+      tickets = calculateTickets(directs, 0);
+    }
+
     const newUser: LeaderboardUser = {
       id: `user-${Date.now()}`,
       userId: cleanId,
       name: name && typeof name === 'string' && name.trim() ? name.trim() : `Leader ${cleanId.slice(-4)}`,
-      directCount: directPositive,
-      ticketCount: newTickets,
+      directCount: directs,
+      customTicketBonus: customBonus,
+      ticketCount: tickets,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -248,25 +283,42 @@ app.post('/api/users/upgrade', (req, res) => {
   res.json({ success: true, isNew, newRank, version: dataVersion, users: cachedUsers });
 });
 
-// POST edit an existing user (ID, Name, Directs, Custom Bonus)
+// POST edit an existing user (ID, Name, Directs, Tickets, Custom Bonus)
 app.post('/api/users/edit', (req, res) => {
   const updated = req.body as LeaderboardUser;
-  if (!updated || !updated.id) {
+  if (!updated || (!updated.id && !updated.userId)) {
     return res.status(400).json({ error: 'Valid user object required' });
   }
 
   const cleanId = updated.userId ? updated.userId.trim().toUpperCase() : '';
+  const directNum = Math.max(0, parseInt(String(updated.directCount), 10) || 0);
+  
+  let finalTickets = 0;
+  let finalBonus = Math.max(0, parseInt(String(updated.customTicketBonus), 10) || 0);
+
+  if (typeof updated.ticketCount === 'number' && !isNaN(updated.ticketCount)) {
+    finalTickets = Math.max(0, Math.floor(updated.ticketCount));
+    finalBonus = Math.max(0, finalTickets - Math.floor(directNum / 5));
+  } else {
+    finalTickets = calculateTickets(directNum, finalBonus);
+  }
+
   const recalculated: LeaderboardUser = {
     ...updated,
     userId: cleanId,
     name: updated.name ? updated.name.trim() : `Leader ${cleanId.slice(-4)}`,
-    directCount: Math.max(0, updated.directCount || 0),
-    customTicketBonus: Math.max(0, updated.customTicketBonus || 0),
-    ticketCount: calculateTickets(updated.directCount, updated.customTicketBonus || 0),
+    directCount: directNum,
+    customTicketBonus: finalBonus,
+    ticketCount: finalTickets,
     updatedAt: new Date().toISOString(),
   };
 
-  const list = cachedUsers.map((u) => (u.id === recalculated.id ? recalculated : u));
+  const list = cachedUsers.map((u) => {
+    if (u.id === recalculated.id || (cleanId && u.userId.toUpperCase() === cleanId)) {
+      return recalculated;
+    }
+    return u;
+  });
   cachedUsers = sortLeaderboard(list);
   persistStore();
   broadcastLiveUpdate('edit');
@@ -278,6 +330,17 @@ app.post('/api/users/reset', (req, res) => {
   cachedUsers = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
   persistStore();
   broadcastLiveUpdate('reset');
+  res.json({ success: true, version: dataVersion, users: cachedUsers });
+});
+
+// DELETE remove a user by ID or userId
+app.delete('/api/users/:id', (req, res) => {
+  const targetId = req.params.id.trim().toUpperCase();
+  cachedUsers = cachedUsers.filter(
+    (u) => u.id !== req.params.id && u.userId.toUpperCase() !== targetId
+  );
+  persistStore();
+  broadcastLiveUpdate('delete');
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
