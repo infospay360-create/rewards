@@ -135,7 +135,7 @@ export function generateWhatsAppBroadcast(users: LeaderboardUser[]): string {
   text += `🎯 TICKET REWARD & TOP 10 CASH\n`;
   text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
   text += `👥 5 DIRECT ➜ 🎟️ 1 TICKET\n`;
-  text += `💰 TOTAL CASH PRIZE: ₹10,750 (TOP 10)\n`;
+  text += `💰 CASH REWARDS PRIZE POOL (TOP 10)\n`;
   text += `🥇 Rank 1: ₹4,000 | 🥈 Rank 2: ₹2,000 | 🥉 Rank 3: ₹1,000\n`;
   text += `🏅 Rank 4: ₹750 | ⭐ Rank 5-10: ₹500 each\n\n`;
   text += `📅 LIVE TILL — 31 OCTOBER\n\n`;
@@ -254,6 +254,89 @@ export function saveUsersToStorage(users: LeaderboardUser[]): void {
   } catch (err) {
     console.error('Error saving to localStorage:', err);
   }
+}
+
+// Server API Synchronization Helpers (Cross-device, multi-browser persistence)
+export async function fetchUsersFromApi(): Promise<LeaderboardUser[] | null> {
+  try {
+    const res = await fetch('/api/users');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      return sortLeaderboard(data);
+    }
+  } catch (err) {
+    console.warn('[API] Failed to fetch users from server, falling back to local store:', err);
+  }
+  return null;
+}
+
+export async function syncUsersToApi(users: LeaderboardUser[]): Promise<boolean> {
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(users),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[API] Failed to sync users to server:', err);
+    return false;
+  }
+}
+
+export async function upgradeUserOnApi(data: {
+  userId: string;
+  name?: string;
+  directCount: number;
+  isAdditive?: boolean;
+}): Promise<{ success: boolean; users?: LeaderboardUser[]; isNew?: boolean; newRank?: number } | null> {
+  try {
+    const res = await fetch('/api/users/upgrade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error('[API] Failed to upgrade user on server:', err);
+  }
+  return null;
+}
+
+export async function editUserOnApi(user: LeaderboardUser): Promise<LeaderboardUser[] | null> {
+  try {
+    const res = await fetch('/api/users/edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.users ? sortLeaderboard(data.users) : null;
+    }
+  } catch (err) {
+    console.error('[API] Failed to edit user on server:', err);
+  }
+  return null;
+}
+
+export async function resetUsersOnApi(): Promise<LeaderboardUser[] | null> {
+  try {
+    const res = await fetch('/api/users/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.users ? sortLeaderboard(data.users) : null;
+    }
+  } catch (err) {
+    console.error('[API] Failed to reset users on server:', err);
+  }
+  return null;
 }
 
 // Admin Authentication Helpers

@@ -10,10 +10,15 @@ import {
   calculateTickets,
   checkAdminSession,
   saveAdminSession,
+  fetchUsersFromApi,
+  syncUsersToApi,
+  upgradeUserOnApi,
+  editUserOnApi,
+  resetUsersOnApi,
 } from './utils/leaderboardUtils';
 import { Navbar } from './components/Navbar';
-import { Top10CashBanner } from './components/Top10CashBanner';
-import { LuckyDrawRewardsBanner } from './components/LuckyDrawRewardsBanner';
+import { TopActionsBar } from './components/TopActionsBar';
+import { RewardsModal } from './components/RewardsModal';
 import { CheckRankCard } from './components/CheckRankCard';
 import { StatsCards } from './components/StatsCards';
 import { QuickUpgradeBar } from './components/QuickUpgradeBar';
@@ -37,13 +42,18 @@ export default function App() {
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<LeaderboardUser | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Sync to localStorage whenever users change
-  useEffect(() => {
-    saveUsersToStorage(users);
-  }, [users]);
+  // Rewards Modal state (Top 10 Cash vs 40 Lucky Draw Gifts)
+  const [rewardsModalState, setRewardsModalState] = useState<{
+    isOpen: boolean;
+    initialTab: 'cash' | 'gifts';
+  }>({
+    isOpen: false,
+    initialTab: 'cash',
+  });
 
-  // Show transient toast
+  // Show transient toast notification
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -51,10 +61,73 @@ export default function App() {
     }, 4000);
   }, []);
 
+  // Save to localStorage as quick local cache
+  useEffect(() => {
+    saveUsersToStorage(users);
+  }, [users]);
+
+  // Initial load from server & real-time background sync across all devices
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncWithServer = async (silent = true) => {
+      if (!silent) setIsSyncing(true);
+      const serverUsers = await fetchUsersFromApi();
+      if (isMounted && serverUsers && serverUsers.length > 0) {
+        setUsers((prev) => {
+          const prevStr = JSON.stringify(prev);
+          const newStr = JSON.stringify(serverUsers);
+          if (prevStr !== newStr) {
+            saveUsersToStorage(serverUsers);
+            return serverUsers;
+          }
+          return prev;
+        });
+      }
+      if (!silent) setIsSyncing(false);
+    };
+
+    // Immediate initial sync
+    syncWithServer(true);
+
+    // Continuous polling every 5 seconds so every browser automatically receives updates
+    const pollInterval = setInterval(() => {
+      syncWithServer(true);
+    }, 5000);
+
+    // Also sync immediately when user switches tabs or focuses browser
+    const handleFocus = () => {
+      syncWithServer(true);
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, []);
+
+  // Manual refresh trigger
+  const handleManualRefresh = useCallback(async () => {
+    setIsSyncing(true);
+    const fresh = await fetchUsersFromApi();
+    if (fresh && fresh.length > 0) {
+      setUsers(fresh);
+      saveUsersToStorage(fresh);
+      showToast('🔄 Synced live contest data from cloud server.');
+    } else {
+      showToast('⚡ Leaderboard is up to date.');
+    }
+    setIsSyncing(false);
+  }, [showToast]);
+
   const handleAdminLoginSuccess = useCallback(() => {
     setIsAdmin(true);
     saveAdminSession(true);
-    showToast('👑 Admin Logged In! You can now add user IDs and update directs.');
+    showToast('👑 Admin Logged In! You can now add user IDs, names, and update directs.');
   }, [showToast]);
 
   const handleAdminLogout = useCallback(() => {
@@ -65,7 +138,7 @@ export default function App() {
 
   // Primary upgrade function (implements "me bas user id dalo aur direct totel user system automatically upgrade kare")
   const handleUpgradeUser = useCallback(
-    (data: { userId: string; name?: string; directCount: number; isAdditive?: boolean }) => {
+    async (data: { userId: string; name?: string; directCount: number; isAdditive?: boolean }) => {
       const cleanId = data.userId.trim().toUpperCase();
       let isNew = false;
       let oldTickets = 0;
@@ -111,11 +184,21 @@ export default function App() {
         updatedList = [newUser, ...users];
       }
 
-      // Automatically sort so whoever has more direct/tickets stays on top
+      // Automatically sort
       const sorted = sortLeaderboard(updatedList);
       setUsers(sorted);
+      saveUsersToStorage(sorted);
 
       const newRank = sorted.findIndex((u) => u.userId.toUpperCase() === cleanId) + 1;
+
+      // Sync with cloud server so all browsers & mobile devices see it
+      upgradeUserOnApi(data).then((res) => {
+        if (res && res.users) {
+          setUsers(res.users);
+          saveUsersToStorage(res.users);
+        }
+      });
+
       return { isNew, oldTickets, newTickets, newRank };
     },
     [users]
@@ -150,6 +233,10 @@ export default function App() {
 
       const sorted = sortLeaderboard(updatedList);
       setUsers(sorted);
+      saveUsersToStorage(sorted);
+
+      // Persist to server
+      syncUsersToApi(sorted);
 
       const newRank = sorted.findIndex((u) => u.userId === userId) + 1;
 
@@ -176,16 +263,28 @@ export default function App() {
     [isAdmin, users, showToast]
   );
 
-  // Save manual edits from modal
+  // Save manual edits from modal (persists name, ID, directs to server)
   const handleSaveEditedUser = useCallback((updated: LeaderboardUser) => {
     setUsers((prev) => {
       const list = prev.map((u) => (u.id === updated.id ? updated : u));
-      return sortLeaderboard(list);
+      const sorted = sortLeaderboard(list);
+      saveUsersToStorage(sorted);
+      return sorted;
     });
-  }, []);
 
-  // Reset to the initial 26 members
-  const handleResetData = useCallback(() => {
+    // Save to server so all devices update
+    editUserOnApi(updated).then((serverList) => {
+      if (serverList) {
+        setUsers(serverList);
+        saveUsersToStorage(serverList);
+      }
+    });
+
+    showToast(`✅ Member ${updated.userId} updated & saved to cloud server.`);
+  }, [showToast]);
+
+  // Reset to initial 26 members
+  const handleResetData = useCallback(async () => {
     if (!isAdmin) {
       setIsLoginModalOpen(true);
       return;
@@ -195,10 +294,11 @@ export default function App() {
         'Reset leaderboard to the default initial 26 SMARTPAY360 contest participants?'
       )
     ) {
-      const sorted = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
-      setUsers(sorted);
-      saveUsersToStorage(sorted);
-      showToast('🔄 Leaderboard reset to original contest snapshot.');
+      const serverList = await resetUsersOnApi();
+      const finalList = serverList || sortLeaderboard(INITIAL_LEADERBOARD_USERS);
+      setUsers(finalList);
+      saveUsersToStorage(finalList);
+      showToast('🔄 Leaderboard reset to original contest snapshot across all devices.');
     }
   }, [isAdmin, showToast]);
 
@@ -223,23 +323,23 @@ export default function App() {
         onOpenBroadcast={() => setIsBroadcastOpen(true)}
         onResetData={handleResetData}
         onScrollToUpgrade={scrollToUpgrade}
+        onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
+        onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
         totalUsers={users.length}
         totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Top 10 Cash Bonanza Banner (Original Top 10 Cash Distribution) */}
-        <Top10CashBanner users={users} />
-
-        {/* Durga Puja & Diwali 40 Lucky Draw Rewards Showcase (Pure Text List, No Images) */}
-        <LuckyDrawRewardsBanner users={users} />
-
-        {/* Public User "Check My Live Rank" Search Card */}
-        <CheckRankCard users={users} />
-
-        {/* Live Metrics: Total User, Total Direct, Total Ticket */}
-        <StatsCards users={users} />
+        {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
+        <TopActionsBar
+          onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
+          onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
+          onManualRefresh={handleManualRefresh}
+          isSyncing={isSyncing}
+          totalUsers={users.length}
+          totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
+        />
 
         {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
         {isAdmin && (
@@ -251,7 +351,7 @@ export default function App() {
           />
         )}
 
-        {/* Top 3 Podium Highlights with Cash Badges */}
+        {/* Top 3 Podium Highlights with Cash Badges - Front & Center */}
         {users.length >= 3 && (
           <LeaderboardPodium
             isAdmin={isAdmin}
@@ -263,7 +363,7 @@ export default function App() {
           />
         )}
 
-        {/* Complete Live Leaderboard Table with Top 10 Cash status */}
+        {/* Complete Live Leaderboard Table with Top 10 Cash status - Immediately Visible */}
         <LeaderboardTable
           isAdmin={isAdmin}
           users={users}
@@ -272,6 +372,12 @@ export default function App() {
             if (isAdmin) setEditingUser(u);
           }}
         />
+
+        {/* Public User "Check My Live Rank" Search Card */}
+        <CheckRankCard users={users} />
+
+        {/* Live Metrics: Total User, Total Direct, Total Ticket */}
+        <StatsCards users={users} />
 
         {/* Rules & Contest Notice */}
         <NoticeBanner />
@@ -286,7 +392,7 @@ export default function App() {
             <span>Live Ticket & Top 10 Cash Leaderboard</span>
           </div>
           <div className="text-slate-400">
-            👥 5 Direct = 🎟️ 1 Ticket • 💰 ₹10,750 Top 10 Cash Distribution
+            👥 5 Direct = 🎟️ 1 Ticket • 💰 Cash Rewards Prize Pool (Top 10)
           </div>
         </div>
       </footer>
@@ -313,12 +419,20 @@ export default function App() {
         users={users}
       />
 
-      {/* User Edit Modal (Admin only) */}
+      {/* User Edit Modal (Admin only - now edits both User ID and Name) */}
       <UserEditModal
         user={editingUser}
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         onSave={handleSaveEditedUser}
+      />
+
+      {/* Rewards & Prizes Modal (Contains Top 10 Cash Rewards & 40 Lucky Draw Gifts List) */}
+      <RewardsModal
+        isOpen={rewardsModalState.isOpen}
+        initialTab={rewardsModalState.initialTab}
+        onClose={() => setRewardsModalState((prev) => ({ ...prev, isOpen: false }))}
+        users={users}
       />
     </div>
   );

@@ -8,6 +8,8 @@ interface NavbarProps {
   onOpenBroadcast: () => void;
   onResetData: () => void;
   onScrollToUpgrade: () => void;
+  onOpenCashRewards?: () => void;
+  onOpenGiftsModal?: () => void;
   totalUsers: number;
   totalTickets: number;
 }
@@ -19,6 +21,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenBroadcast,
   onResetData,
   onScrollToUpgrade,
+  onOpenCashRewards,
+  onOpenGiftsModal,
   totalUsers,
   totalTickets,
 }) => {
@@ -59,16 +63,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Center Badges (Desktop) */}
+          {/* Center Badges & Buttons (Desktop) */}
           <div className="hidden lg:flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-500/30 text-xs">
+            <button
+              type="button"
+              onClick={onOpenCashRewards}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-950/50 hover:bg-amber-900/60 border border-amber-500/40 text-xs transition-colors cursor-pointer"
+            >
               <span className="text-amber-400 font-bold">💰 TOP 10:</span>
               <span className="font-extrabold text-white">Cash Rewards Prize Pool</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300">
-              <Ticket className="w-3.5 h-3.5 text-emerald-400" />
-              <span>5 Direct ➜ 1 Ticket</span>
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenGiftsModal}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/40 text-xs text-pink-300 transition-colors cursor-pointer"
+            >
+              <span className="text-pink-400 font-bold">🎁 40 GIFTS:</span>
+              <span className="font-extrabold text-white">Lucky Draw List</span>
+            </button>
           </div>
 
           {/* Right Action buttons */}

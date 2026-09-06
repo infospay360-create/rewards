@@ -18,11 +18,13 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 }) => {
   if (!isOpen || !user) return null;
 
+  const [userIdInput, setUserIdInput] = useState(user.userId || '');
   const [name, setName] = useState(user.name || '');
   const [directCount, setDirectCount] = useState(user.directCount);
   const [customBonus, setCustomBonus] = useState(user.customTicketBonus || 0);
 
   useEffect(() => {
+    setUserIdInput(user.userId || '');
     setName(user.name || '');
     setDirectCount(user.directCount);
     setCustomBonus(user.customTicketBonus || 0);
@@ -32,9 +34,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanId = userIdInput.trim().toUpperCase() || user.userId;
     onSave({
       ...user,
-      name: name.trim() || `Member ${user.userId.slice(-4)}`,
+      userId: cleanId,
+      name: name.trim() || `Member ${cleanId.slice(-4)}`,
       directCount: Math.max(0, directCount),
       customTicketBonus: Math.max(0, customBonus),
       ticketCount: autoCalculatedTickets,
@@ -57,7 +61,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                 Edit Member: {user.userId}
               </h3>
               <p className="text-xs text-slate-400">
-                Update direct referrals & member name
+                Update User ID, member name & referrals
               </p>
             </div>
           </div>
@@ -74,13 +78,15 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              User ID (Read-only)
+              User ID
             </label>
             <input
               type="text"
-              value={user.userId}
-              disabled
-              className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-sm font-mono font-bold text-slate-400 cursor-not-allowed"
+              value={userIdInput}
+              onChange={(e) => setUserIdInput(e.target.value)}
+              placeholder="e.g. SPAY411819"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+              required
             />
           </div>
 
