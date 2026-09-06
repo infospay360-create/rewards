@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { INITIAL_LEADERBOARD_USERS } from './src/data/initialData';
 import { LeaderboardUser } from './src/types';
 import { calculateTickets, sortLeaderboard } from './src/utils/leaderboardUtils';
@@ -10,6 +11,22 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
+
+// Supabase Configuration
+const SUPABASE_PROJECT_ID = process.env.SUPABASE_PROJECT_ID || 'nqkwsnkyvqktykgoijos';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || `https://${SUPABASE_PROJECT_ID}.supabase.co`;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_MT7oSxtBkkEl8zmGxwrFlA_8cdzCT2W';
+const SUPABASE_TABLE = 'leaderboard_users';
+
+let supabaseServer: SupabaseClient | null = null;
+try {
+  supabaseServer = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+  });
+  console.log('[Supabase Server] Client configured for project:', SUPABASE_PROJECT_ID);
+} catch (e) {
+  console.error('[Supabase Server] Failed to initialize client:', e);
+}
 
 // Persistent store file path on container filesystem
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -21,6 +38,114 @@ let dataVersion = Date.now();
 
 // Set of active SSE (Server-Sent Events) client connections
 const sseClients = new Set<express.Response>();
+
+// Supabase sync helpers
+async function syncUserToSupabase(user: LeaderboardUser) {
+  if (!supabaseServer) return;
+  try {
+    const row = {
+      id: user.id || `user-${Date.now()}`,
+      user_id: user.userId.trim().toUpperCase(),
+      name: user.name.trim(),
+      direct_count: Math.max(0, Number(user.directCount) || 0),
+      ticket_count: Math.max(0, Number(user.ticketCount) || 0),
+      custom_ticket_bonus: Math.max(0, Number(user.customTicketBonus) || 0),
+      created_at: user.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabaseServer
+      .from(SUPABASE_TABLE)
+      .upsert(row, { onConflict: 'user_id' });
+    if (error) {
+      console.warn('[Supabase Server] Sync error:', error.message);
+    } else {
+      console.log(`[Supabase Server] Synced user ${user.userId} to Supabase successfully`);
+    }
+  } catch (err) {
+    console.warn('[Supabase Server] Sync exception:', err);
+  }
+}
+
+async function deleteUserFromSupabase(cleanId: string, id?: string) {
+  if (!supabaseServer) return;
+  try {
+    const { error } = await supabaseServer
+      .from(SUPABASE_TABLE)
+      .delete()
+      .or(`user_id.eq.${cleanId},id.eq.${id || cleanId}`);
+    if (error) {
+      console.warn('[Supabase Server] Delete error:', error.message);
+    }
+  } catch (err) {
+    console.warn('[Supabase Server] Delete exception:', err);
+  }
+}
+
+async function syncAllUsersToSupabase(users: LeaderboardUser[]) {
+  if (!supabaseServer) return;
+  try {
+    const rows = users.map((u) => ({
+      id: u.id || `user-${Date.now()}`,
+      user_id: u.userId.trim().toUpperCase(),
+      name: u.name.trim(),
+      direct_count: Math.max(0, Number(u.directCount) || 0),
+      ticket_count: Math.max(0, Number(u.ticketCount) || 0),
+      custom_ticket_bonus: Math.max(0, Number(u.customTicketBonus) || 0),
+      created_at: u.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await supabaseServer
+      .from(SUPABASE_TABLE)
+      .upsert(rows, { onConflict: 'user_id' });
+    if (error) {
+      console.warn('[Supabase Server] Batch sync error:', error.message);
+    } else {
+      console.log(`[Supabase Server] Batch synced ${rows.length} users to Supabase`);
+    }
+  } catch (err) {
+    console.warn('[Supabase Server] Batch sync exception:', err);
+  }
+}
+
+async function hydrateFromSupabase(): Promise<boolean> {
+  if (!supabaseServer) return false;
+  try {
+    const { data, error } = await supabaseServer
+      .from(SUPABASE_TABLE)
+      .select('*')
+      .order('ticket_count', { ascending: false })
+      .order('direct_count', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase Server] Could not fetch table:', error.message);
+      return false;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const mapped: LeaderboardUser[] = data.map((row: any) => ({
+        id: String(row.id || row.user_id),
+        userId: String(row.user_id || '').toUpperCase(),
+        name: String(row.name || ''),
+        directCount: Number(row.direct_count || 0),
+        ticketCount: Number(row.ticket_count || 0),
+        customTicketBonus: Number(row.custom_ticket_bonus || 0),
+        createdAt: row.created_at || new Date().toISOString(),
+        updatedAt: row.updated_at || new Date().toISOString(),
+      }));
+      cachedUsers = sortLeaderboard(mapped);
+      persistStore();
+      console.log(`[Supabase Server] Hydrated ${cachedUsers.length} users from Supabase!`);
+      return true;
+    } else if (Array.isArray(data) && data.length === 0) {
+      console.log('[Supabase Server] Table exists but empty. Seeding initial contest users...');
+      await syncAllUsersToSupabase(cachedUsers);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[Supabase Server] Hydrate exception:', err);
+  }
+  return false;
+}
 
 // Initialize or load data from disk
 function initStore(): void {
@@ -202,6 +327,7 @@ app.post('/api/users', (req, res) => {
   cachedUsers = sortLeaderboard(sanitized);
   persistStore();
   broadcastLiveUpdate('sync');
+  syncAllUsersToSupabase(cachedUsers);
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
@@ -217,6 +343,7 @@ app.post('/api/users/upgrade', (req, res) => {
 
   let updatedList = [...cachedUsers];
   let isNew = false;
+  let targetUser: LeaderboardUser | null = null;
 
   if (existingIdx >= 0) {
     const curr = cachedUsers[existingIdx];
@@ -246,6 +373,7 @@ app.post('/api/users/upgrade', (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     updatedList[existingIdx] = updatedUser;
+    targetUser = updatedUser;
   } else {
     isNew = true;
     let directs = 0;
@@ -273,11 +401,15 @@ app.post('/api/users/upgrade', (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     updatedList.unshift(newUser);
+    targetUser = newUser;
   }
 
   cachedUsers = sortLeaderboard(updatedList);
   persistStore();
   broadcastLiveUpdate('upgrade');
+  if (targetUser) {
+    syncUserToSupabase(targetUser);
+  }
 
   const newRank = cachedUsers.findIndex((u) => u.userId.toUpperCase() === cleanId) + 1;
   res.json({ success: true, isNew, newRank, version: dataVersion, users: cachedUsers });
@@ -322,14 +454,16 @@ app.post('/api/users/edit', (req, res) => {
   cachedUsers = sortLeaderboard(list);
   persistStore();
   broadcastLiveUpdate('edit');
+  syncUserToSupabase(recalculated);
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
-// POST reset to initial 26 members
+// POST reset to initial contest members
 app.post('/api/users/reset', (req, res) => {
   cachedUsers = sortLeaderboard(INITIAL_LEADERBOARD_USERS);
   persistStore();
   broadcastLiveUpdate('reset');
+  syncAllUsersToSupabase(cachedUsers);
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
@@ -341,13 +475,81 @@ app.delete('/api/users/:id', (req, res) => {
   );
   persistStore();
   broadcastLiveUpdate('delete');
+  deleteUserFromSupabase(targetId, req.params.id);
   res.json({ success: true, version: dataVersion, users: cachedUsers });
+});
+
+// Supabase Status & Schema Endpoints
+app.get('/api/supabase/status', async (req, res) => {
+  if (!supabaseServer) {
+    return res.json({
+      configured: false,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      connected: false,
+      tableExists: false,
+      count: 0,
+      error: 'Supabase client not initialized',
+    });
+  }
+
+  try {
+    const { data, error, count } = await supabaseServer
+      .from(SUPABASE_TABLE)
+      .select('*', { count: 'exact', head: false })
+      .limit(1);
+
+    if (error) {
+      return res.json({
+        configured: true,
+        projectId: SUPABASE_PROJECT_ID,
+        url: SUPABASE_URL,
+        connected: true,
+        tableExists: false,
+        count: 0,
+        error: error.message,
+      });
+    }
+
+    return res.json({
+      configured: true,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      connected: true,
+      tableExists: true,
+      count: count ?? (data ? data.length : 0),
+      error: null,
+    });
+  } catch (err: any) {
+    return res.json({
+      configured: true,
+      projectId: SUPABASE_PROJECT_ID,
+      url: SUPABASE_URL,
+      connected: false,
+      tableExists: false,
+      count: 0,
+      error: err?.message || 'Connection failed',
+    });
+  }
+});
+
+app.post('/api/supabase/seed', async (req, res) => {
+  if (!supabaseServer) {
+    return res.status(500).json({ error: 'Supabase client not initialized' });
+  }
+  await syncAllUsersToSupabase(cachedUsers);
+  res.json({ success: true, count: cachedUsers.length });
 });
 
 // ==========================================
 // VITE MIDDLEWARE / STATIC ASSETS
 // ==========================================
 async function startServer() {
+  // Attempt to hydrate store from Supabase database
+  await hydrateFromSupabase().catch((err) => {
+    console.warn('[Supabase Server] Initial hydration note:', err);
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

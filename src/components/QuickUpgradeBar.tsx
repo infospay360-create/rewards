@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserCheck, Ticket, Sparkles, Check, ArrowUpRight, ArrowDownRight, Plus, Minus, Zap, Lock, ShieldCheck } from 'lucide-react';
+import { UserCheck, Ticket, Sparkles, Check, ArrowUpRight, ArrowDownRight, Plus, Minus, Zap, Lock, ShieldCheck, Database } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { LeaderboardUser } from '../types';
 import { calculateTickets, calculateProgressToNextTicket } from '../utils/leaderboardUtils';
@@ -7,6 +7,7 @@ import { calculateTickets, calculateProgressToNextTicket } from '../utils/leader
 interface QuickUpgradeBarProps {
   isAdmin: boolean;
   onOpenLogin: () => void;
+  onOpenSupabaseModal?: () => void;
   users: LeaderboardUser[];
   onUpgradeUser: (data: {
     userId: string;
@@ -25,6 +26,7 @@ interface QuickUpgradeBarProps {
 export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
   isAdmin,
   onOpenLogin,
+  onOpenSupabaseModal,
   users,
   onUpgradeUser,
 }) => {
@@ -186,6 +188,18 @@ export const QuickUpgradeBar: React.FC<QuickUpgradeBarProps> = ({
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ACTIVE ADMIN
               </span>
+              {onOpenSupabaseModal && (
+                <button
+                  type="button"
+                  onClick={onOpenSupabaseModal}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold transition-all cursor-pointer"
+                  title="Supabase Database & Realtime Status"
+                >
+                  <Database className="w-3 h-3 text-emerald-400" />
+                  <span>Supabase Live</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                </button>
+              )}
             </h2>
             <p className="text-xs text-slate-400">
               Add new member IDs or increase direct referrals — System automatically generates 1 ticket for every 5 directs!

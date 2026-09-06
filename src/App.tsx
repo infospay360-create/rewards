@@ -31,6 +31,14 @@ import { NoticeBanner } from './components/NoticeBanner';
 import { BroadcastModal } from './components/BroadcastModal';
 import { UserEditModal } from './components/UserEditModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { SupabaseSyncModal } from './components/SupabaseSyncModal';
+import {
+  fetchUsersFromSupabase,
+  upsertUserInSupabase,
+  seedOrResetSupabaseUsers,
+  deleteUserFromSupabase,
+  subscribeToSupabaseRealtime,
+} from './lib/supabase';
 
 export default function App() {
   const [users, setUsers] = useState<LeaderboardUser[]>(() => {
@@ -43,10 +51,12 @@ export default function App() {
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<LeaderboardUser | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(true);
+  const [isSupabaseLive, setIsSupabaseLive] = useState(false);
   const currentVersionRef = useRef<number>(0);
 
   // Rewards Modal state (Top 10 Cash vs 40 Lucky Draw Gifts)
@@ -96,6 +106,21 @@ export default function App() {
 
     const fetchFullData = async (silent = true) => {
       if (!silent) setIsSyncing(true);
+
+      // Priority 1: Direct query to Supabase PostgreSQL database (Absolute Source of Truth)
+      try {
+        const supabaseUsers = await fetchUsersFromSupabase();
+        if (isMounted && supabaseUsers && supabaseUsers.length > 0) {
+          applyUsersUpdate(supabaseUsers);
+          setIsSupabaseLive(true);
+          if (!silent && isMounted) setIsSyncing(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('[Supabase Direct] Fetch note:', err);
+      }
+
+      // Priority 2: Central server API fallback
       const res = await fetchUsersFromApi();
       if (isMounted && res && res.users) {
         applyUsersUpdate(res.users, res.version);
@@ -103,17 +128,25 @@ export default function App() {
       if (!silent && isMounted) setIsSyncing(false);
     };
 
-    // Priority 1: Fetch fresh central server data immediately upon mount
+    // Immediate initial fetch
     fetchFullData(false);
 
-    // Priority 2: Listen for instant tab-to-tab BroadcastChannel broadcasts
+    // Priority A: Supabase Realtime (postgres_changes broadcast instantly to all mobiles & browsers)
+    const unsubscribeSupabase = subscribeToSupabaseRealtime((freshUsers) => {
+      if (isMounted && freshUsers && freshUsers.length > 0) {
+        applyUsersUpdate(freshUsers);
+        setIsSupabaseLive(true);
+      }
+    });
+
+    // Priority B: Listen for instant tab-to-tab BroadcastChannel broadcasts
     const unsubscribeTabs = subscribeToTabBroadcasts((tabUsers) => {
       if (isMounted) {
         applyUsersUpdate(tabUsers);
       }
     });
 
-    // Priority 3: Cross-tab localStorage storage events
+    // Priority C: Cross-tab localStorage storage events
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'smartpay360_leaderboard_v1' && e.newValue) {
         try {
@@ -128,7 +161,7 @@ export default function App() {
     };
     window.addEventListener('storage', handleStorageChange);
 
-    // Priority 4: Server-Sent Events (SSE) stream for live push
+    // Priority D: Server-Sent Events (SSE) stream for live push
     const setupSSE = () => {
       try {
         eventSource = new EventSource('/api/stream');
@@ -169,7 +202,7 @@ export default function App() {
 
     setupSSE();
 
-    // Priority 5: Ultra-fast 1.5-second lightweight version polling (ensures all devices stay live even on cellular networks)
+    // Priority E: Ultra-fast 1.5-second lightweight version polling (ensures all devices stay live even on cellular networks)
     const pollInterval = setInterval(async () => {
       const serverVersion = await fetchVersionFromApi();
       if (!isMounted) return;
@@ -181,7 +214,7 @@ export default function App() {
       }
     }, 1500);
 
-    // Priority 6: Tab focus or screen unlock sync
+    // Priority F: Tab focus or screen unlock sync
     const handleVisibilityOrFocus = () => {
       fetchFullData(true);
     };
@@ -190,6 +223,7 @@ export default function App() {
 
     return () => {
       isMounted = false;
+      unsubscribeSupabase();
       unsubscribeTabs();
       window.removeEventListener('storage', handleStorageChange);
       if (eventSource) eventSource.close();
@@ -203,6 +237,20 @@ export default function App() {
   // Manual refresh trigger
   const handleManualRefresh = useCallback(async () => {
     setIsSyncing(true);
+
+    // First attempt direct Supabase query
+    const supabaseUsers = await fetchUsersFromSupabase();
+    if (supabaseUsers && supabaseUsers.length > 0) {
+      const sorted = sortLeaderboard(supabaseUsers);
+      setUsers(sorted);
+      saveUsersToStorage(sorted);
+      broadcastToOtherTabs(sorted);
+      setIsSupabaseLive(true);
+      showToast('🔄 Synced live contest data directly from Supabase PostgreSQL!');
+      setIsSyncing(false);
+      return;
+    }
+
     const fresh = await fetchUsersFromApi();
     if (fresh && fresh.users && fresh.users.length > 0) {
       currentVersionRef.current = fresh.version;
@@ -303,6 +351,14 @@ export default function App() {
 
       const newRank = sorted.findIndex((u) => u.userId.toUpperCase() === cleanId) + 1;
 
+      // Sync directly with Supabase PostgreSQL (Source of Truth)
+      const targetUser = updatedList.find((u) => u.userId.toUpperCase() === cleanId);
+      if (targetUser) {
+        upsertUserInSupabase(targetUser).catch((err) => {
+          console.warn('[Supabase] Client upsert error:', err);
+        });
+      }
+
       // Sync with cloud server so all browsers & mobile devices see it
       upgradeUserOnApi(data).then((res) => {
         if (res && res.users) {
@@ -349,6 +405,14 @@ export default function App() {
       saveUsersToStorage(sorted);
       broadcastToOtherTabs(sorted);
 
+      // Persist directly to Supabase
+      const targetUpdated = sorted.find((u) => u.userId === userId);
+      if (targetUpdated) {
+        upsertUserInSupabase(targetUpdated).catch((err) => {
+          console.warn('[Supabase] Direct upsert note:', err);
+        });
+      }
+
       // Persist to server
       syncUsersToApi(sorted);
 
@@ -387,6 +451,11 @@ export default function App() {
       return sorted;
     });
 
+    // Save directly to Supabase
+    upsertUserInSupabase(updated).catch((err) => {
+      console.warn('[Supabase] Edit upsert error:', err);
+    });
+
     // Save to server so all devices update
     editUserOnApi(updated).then((serverList) => {
       if (serverList) {
@@ -396,7 +465,7 @@ export default function App() {
       }
     });
 
-    showToast(`✅ Member ${updated.userId} updated & saved to cloud server.`);
+    showToast(`✅ Member ${updated.userId} updated & saved to Supabase cloud database.`);
   }, [showToast]);
 
   // Reset to initial 26 members
@@ -410,12 +479,15 @@ export default function App() {
         'Reset leaderboard to the default initial 26 SMARTPAY360 contest participants?'
       )
     ) {
+      // Seed/reset in Supabase
+      seedOrResetSupabaseUsers();
+
       const serverList = await resetUsersOnApi();
       const finalList = serverList || sortLeaderboard(INITIAL_LEADERBOARD_USERS);
       setUsers(finalList);
       saveUsersToStorage(finalList);
       broadcastToOtherTabs(finalList);
-      showToast('🔄 Leaderboard reset to original contest snapshot across all devices.');
+      showToast('🔄 Leaderboard reset to original contest snapshot across Supabase & all devices.');
     }
   }, [isAdmin, showToast]);
 
@@ -453,8 +525,10 @@ export default function App() {
           onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
           onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
           onManualRefresh={handleManualRefresh}
+          onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
           isSyncing={isSyncing}
           isLiveConnected={isLiveConnected}
+          isSupabaseLive={isSupabaseLive}
           totalUsers={users.length}
           totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
         />
@@ -464,6 +538,7 @@ export default function App() {
           <QuickUpgradeBar
             isAdmin={isAdmin}
             onOpenLogin={() => setIsLoginModalOpen(true)}
+            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
             users={users}
             onUpgradeUser={handleUpgradeUser}
           />
@@ -551,6 +626,14 @@ export default function App() {
         initialTab={rewardsModalState.initialTab}
         onClose={() => setRewardsModalState((prev) => ({ ...prev, isOpen: false }))}
         users={users}
+      />
+
+      {/* Supabase PostgreSQL & Realtime Database Sync Modal */}
+      <SupabaseSyncModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+        users={users}
+        onSyncSuccess={() => showToast('✅ Supabase database synchronized successfully!')}
       />
     </div>
   );

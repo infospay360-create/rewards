@@ -7,6 +7,7 @@ import {
   Trophy,
   CheckCircle2,
   Users,
+  Database,
 } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 
@@ -14,8 +15,10 @@ interface TopActionsBarProps {
   onOpenCashRewards: () => void;
   onOpenGiftsModal: () => void;
   onManualRefresh: () => void;
+  onOpenSupabaseModal?: () => void;
   isSyncing: boolean;
   isLiveConnected?: boolean;
+  isSupabaseLive?: boolean;
   totalUsers: number;
   totalTickets: number;
 }
@@ -24,8 +27,10 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
   onOpenCashRewards,
   onOpenGiftsModal,
   onManualRefresh,
+  onOpenSupabaseModal,
   isSyncing,
   isLiveConnected = true,
+  isSupabaseLive = true,
   totalUsers,
   totalTickets,
 }) => {
@@ -79,8 +84,21 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
           </button>
         </div>
 
-        {/* Right: Live Cloud Sync Status across all devices + Manual Refresh */}
-        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
+        {/* Right: Live Cloud Sync Status across all devices + Supabase + Manual Refresh */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80 flex-wrap">
+          {onOpenSupabaseModal && (
+            <button
+              id="open-supabase-modal-btn"
+              onClick={onOpenSupabaseModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+              title="Supabase PostgreSQL & Realtime details"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Supabase DB</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
+          )}
+
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
             <span className="relative flex h-2 w-2">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLiveConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
@@ -89,11 +107,11 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
             <span className="text-slate-300 font-medium text-[11px]">
               {isLiveConnected ? (
                 <>
-                  <span className="text-emerald-400 font-bold">Live Stream</span> • All India Sync
+                  <span className="text-emerald-400 font-bold">Realtime Live</span> • All Devices
                 </>
               ) : (
                 <>
-                  <span className="text-amber-400 font-bold">Live Synced</span> • All Devices
+                  <span className="text-amber-400 font-bold">Connecting</span> • Cloud DB
                 </>
               )}
             </span>
@@ -104,7 +122,7 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
             onClick={onManualRefresh}
             disabled={isSyncing}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 text-xs font-bold text-slate-200 transition-all disabled:opacity-50 cursor-pointer"
-            title="Fetch latest rankings from server"
+            title="Fetch latest rankings from Supabase database"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Refresh'}</span>
