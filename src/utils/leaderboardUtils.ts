@@ -256,21 +256,49 @@ export function saveUsersToStorage(users: LeaderboardUser[]): void {
   }
 }
 
+// Cross-tab and Cross-window BroadcastChannel for instant 0ms local sync
+const liveBroadcastChannel =
+  typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined'
+    ? new BroadcastChannel('smartpay360_live_sync')
+    : null;
+
+export function broadcastToOtherTabs(users: LeaderboardUser[], version = Date.now()) {
+  try {
+    liveBroadcastChannel?.postMessage({
+      type: 'USERS_UPDATED',
+      version,
+      users,
+    });
+  } catch {
+    // Ignore channel broadcast errors
+  }
+}
+
+export function subscribeToTabBroadcasts(callback: (users: LeaderboardUser[]) => void): () => void {
+  if (!liveBroadcastChannel) return () => {};
+  const handler = (event: MessageEvent) => {
+    if (event.data && event.data.type === 'USERS_UPDATED' && Array.isArray(event.data.users)) {
+      callback(sortLeaderboard(event.data.users));
+    }
+  };
+  liveBroadcastChannel.addEventListener('message', handler);
+  return () => {
+    liveBroadcastChannel.removeEventListener('message', handler);
+  };
+}
+
 // Server API Synchronization Helpers (Cross-device, multi-browser persistence)
-export async function fetchUsersFromApi(): Promise<LeaderboardUser[] | null> {
+export async function fetchUsersFromApi(): Promise<{ users: LeaderboardUser[]; version: number } | null> {
   try {
     const timestamp = Date.now();
-    const res = await fetch(`/api/users?_t=${timestamp}`, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-      },
-    });
+    const res = await fetch(`/api/users?_t=${timestamp}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (Array.isArray(data)) {
-      return sortLeaderboard(data);
+      return { users: sortLeaderboard(data), version: timestamp };
+    }
+    if (data && Array.isArray(data.users)) {
+      return { users: sortLeaderboard(data.users), version: data.version || timestamp };
     }
   } catch (err) {
     console.warn('[API] Failed to fetch users from server:', err);
@@ -278,14 +306,24 @@ export async function fetchUsersFromApi(): Promise<LeaderboardUser[] | null> {
   return null;
 }
 
+export async function fetchVersionFromApi(): Promise<number | null> {
+  try {
+    const timestamp = Date.now();
+    const res = await fetch(`/api/version?_t=${timestamp}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.version ? data.version : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function syncUsersToApi(users: LeaderboardUser[]): Promise<boolean> {
   try {
     const res = await fetch(`/api/users?_t=${Date.now()}`, {
       method: 'POST',
-      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
       body: JSON.stringify(users),
     });
@@ -305,15 +343,17 @@ export async function upgradeUserOnApi(data: {
   try {
     const res = await fetch(`/api/users/upgrade?_t=${Date.now()}`, {
       method: 'POST',
-      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
       body: JSON.stringify(data),
     });
     if (res.ok) {
-      return await res.json();
+      const resp = await res.json();
+      return {
+        ...resp,
+        users: resp.users ? sortLeaderboard(resp.users) : undefined,
+      };
     }
   } catch (err) {
     console.error('[API] Failed to upgrade user on server:', err);
@@ -325,10 +365,8 @@ export async function editUserOnApi(user: LeaderboardUser): Promise<LeaderboardU
   try {
     const res = await fetch(`/api/users/edit?_t=${Date.now()}`, {
       method: 'POST',
-      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
       body: JSON.stringify(user),
     });
@@ -346,10 +384,8 @@ export async function resetUsersOnApi(): Promise<LeaderboardUser[] | null> {
   try {
     const res = await fetch(`/api/users/reset?_t=${Date.now()}`, {
       method: 'POST',
-      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
     if (res.ok) {

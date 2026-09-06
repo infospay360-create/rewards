@@ -89,17 +89,17 @@ initStore();
 // ==========================================
 // ANTI-CACHE & CORS MIDDLEWARE FOR ALL /api
 // ==========================================
-app.use('/api', (req, res, next) => {
+app.use((req, res, next) => {
   // Enforce zero caching across all browsers, mobile devices, and reverse proxies/CDNs
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
 
-  // Cross-Origin allowance
+  // Cross-Origin allowance for all browsers & mobile devices
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cache-Control, Pragma');
+  res.setHeader('Access-Control-Allow-Headers', '*');
 
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
@@ -115,6 +115,7 @@ app.get('/api/stream', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no'); // Disable proxy buffering
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.flushHeaders();
 
   // Send initial data immediately upon connecting
@@ -148,6 +149,15 @@ app.get('/api/stream', (req, res) => {
 // REST API ROUTES
 // ==========================================
 
+// Lightweight version probe for ultra-fast polling across devices
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: dataVersion,
+    count: cachedUsers.length,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check with active live client count and version
 app.get('/api/health', (req, res) => {
   res.json({
@@ -159,9 +169,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// GET all leaderboard users (always returns fresh data)
+// GET all leaderboard users (always returns fresh data with version)
 app.get('/api/users', (req, res) => {
-  res.json(cachedUsers);
+  res.json({
+    version: dataVersion,
+    count: cachedUsers.length,
+    users: cachedUsers,
+  });
 });
 
 // POST replace all users
@@ -191,7 +205,7 @@ app.post('/api/users/upgrade', (req, res) => {
   }
 
   const cleanId = userId.trim().toUpperCase();
-  const directNum = Math.max(0, parseInt(directCount, 10) || 0);
+  const directNum = parseInt(directCount, 10) || 0;
   const existingIdx = cachedUsers.findIndex((u) => u.userId.toUpperCase() === cleanId);
 
   let updatedList = [...cachedUsers];
@@ -199,25 +213,26 @@ app.post('/api/users/upgrade', (req, res) => {
 
   if (existingIdx >= 0) {
     const curr = cachedUsers[existingIdx];
-    const newDirect = isAdditive ? curr.directCount + directNum : directNum;
+    const newDirect = Math.max(0, isAdditive ? curr.directCount + directNum : directNum);
     const newTickets = calculateTickets(newDirect, curr.customTicketBonus || 0);
 
     const updatedUser: LeaderboardUser = {
       ...curr,
       name: name && typeof name === 'string' && name.trim() ? name.trim() : curr.name,
-      directCount: Math.max(0, newDirect),
+      directCount: newDirect,
       ticketCount: newTickets,
       updatedAt: new Date().toISOString(),
     };
     updatedList[existingIdx] = updatedUser;
   } else {
     isNew = true;
-    const newTickets = calculateTickets(directNum);
+    const directPositive = Math.max(0, directNum);
+    const newTickets = calculateTickets(directPositive);
     const newUser: LeaderboardUser = {
       id: `user-${Date.now()}`,
       userId: cleanId,
       name: name && typeof name === 'string' && name.trim() ? name.trim() : `Leader ${cleanId.slice(-4)}`,
-      directCount: directNum,
+      directCount: directPositive,
       ticketCount: newTickets,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
