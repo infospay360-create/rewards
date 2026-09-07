@@ -228,7 +228,7 @@ export function subscribeToThemeBroadcasts(
 // Server API sync helpers
 export async function fetchThemeFromApi(): Promise<ThemeSettings | null> {
   try {
-    const res = await fetch('/api/theme', { cache: 'no-store' });
+    const res = await fetch(`/api/theme?_t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.theme && data.theme.bgBaseColor) {
@@ -242,7 +242,7 @@ export async function fetchThemeFromApi(): Promise<ThemeSettings | null> {
 
 export async function saveThemeToApi(theme: ThemeSettings): Promise<boolean> {
   try {
-    const res = await fetch('/api/theme', {
+    const res = await fetch(`/api/theme?_t=${Date.now()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme }),

@@ -43,7 +43,7 @@ export const ThemeSelectorCard: React.FC<ThemeSelectorCardProps> = ({
       onThemeChange(updated, true);
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 2500);
-      showToast(`🎨 Background changed to "${found.name}" & saved!`);
+      showToast(`⚡ Broadcasted "${found.name}" to all devices across India!`);
     }
   };
 
@@ -54,7 +54,7 @@ export const ThemeSelectorCard: React.FC<ThemeSelectorCardProps> = ({
       updatedAt: new Date().toISOString(),
     };
     onThemeChange(updated, true);
-    showToast(`✨ Background pattern updated to ${pattern.toUpperCase()}`);
+    showToast(`✨ Pattern "${pattern.toUpperCase()}" broadcasted to all devices!`);
   };
 
   const handleGlowIntensityChange = (intensity: GlowIntensity) => {
@@ -64,7 +64,7 @@ export const ThemeSelectorCard: React.FC<ThemeSelectorCardProps> = ({
       updatedAt: new Date().toISOString(),
     };
     onThemeChange(updated, true);
-    showToast(`💡 Ambient glow set to ${intensity.toUpperCase()}`);
+    showToast(`💡 Glow "${intensity.toUpperCase()}" broadcasted to all devices!`);
   };
 
   const handleApplyCustomHex = (e: React.FormEvent) => {
@@ -87,12 +87,12 @@ export const ThemeSelectorCard: React.FC<ThemeSelectorCardProps> = ({
     onThemeChange(updated, true);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
-    showToast(`🎨 Custom background ${cleanHex} applied & broadcasted!`);
+    showToast(`🎨 Custom color "${cleanHex}" broadcasted to all India devices!`);
   };
 
   const handleResetToDefault = () => {
     onThemeChange(DEFAULT_THEME, true);
-    showToast('🔄 Reverted to Default Midnight Obsidian & Gold Theme.');
+    showToast('🔄 Reverted to Default Theme & broadcasted across all devices.');
   };
 
   return (
@@ -104,14 +104,20 @@ export const ThemeSelectorCard: React.FC<ThemeSelectorCardProps> = ({
             <Palette className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-black text-white">Background & Theme Customizer</h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                Live Admin Setting
+              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                All India Live Sync
               </span>
+              {isSaved && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-bounce">
+                  <CheckCircle2 className="w-3 h-3 text-amber-400" /> Broadcasted!
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Change the background theme for all users and visitors across the entire leaderboard
+              Admin jo bhi colour ya design yahan select karenge, wo pure India me sabhi mobile screens aur devices par bina refresh kiye real-time update ho jayega.
             </p>
           </div>
         </div>

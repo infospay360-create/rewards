@@ -12,6 +12,7 @@ import {
   saveAdminSession,
   fetchUsersFromApi,
   fetchVersionFromApi,
+  fetchVersionInfoFromApi,
   syncUsersToApi,
   upgradeUserOnApi,
   editUserOnApi,
@@ -48,6 +49,8 @@ import {
   seedOrResetSupabaseUsers,
   deleteUserFromSupabase,
   subscribeToSupabaseRealtime,
+  subscribeToSupabaseTheme,
+  broadcastThemeToSupabase,
 } from './lib/supabase';
 
 // Helper to check if current URL is for Admin Portal (/spay-admin, /admin, etc.)
@@ -90,6 +93,7 @@ export default function App() {
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
   const currentVersionRef = useRef<number>(0);
+  const currentThemeVersionRef = useRef<number>(0);
 
   // Background theme state
   const [currentTheme, setCurrentTheme] = useState<ThemeSettings>(getStoredTheme);
@@ -99,6 +103,7 @@ export default function App() {
       setCurrentTheme(newTheme);
       saveStoredTheme(newTheme);
       broadcastThemeChange(newTheme);
+      broadcastThemeToSupabase(newTheme);
       if (syncToServer) {
         saveThemeToApi(newTheme).catch((err) => {
           console.warn('[Theme] Sync error:', err);
@@ -236,6 +241,14 @@ export default function App() {
       }
     });
 
+    // Listen for Supabase Realtime theme broadcasts (All India Multi-Device Live Sync)
+    const unsubscribeSupabaseTheme = subscribeToSupabaseTheme((newTheme) => {
+      if (isMounted && newTheme && newTheme.bgBaseColor) {
+        setCurrentTheme(newTheme);
+        saveStoredTheme(newTheme);
+      }
+    });
+
     // Fetch theme from central server
     fetchThemeFromApi().then((serverTheme) => {
       if (isMounted && serverTheme && serverTheme.bgBaseColor) {
@@ -314,14 +327,22 @@ export default function App() {
 
     setupSSE();
 
-    // Priority E: Ultra-fast 1.5-second lightweight version polling (ensures all devices stay live even on cellular networks)
+    // Priority E: Ultra-fast 1.5-second lightweight version probe (ensures all devices across India stay synchronized)
     const pollInterval = setInterval(async () => {
-      const serverVersion = await fetchVersionFromApi();
+      const info = await fetchVersionInfoFromApi();
       if (!isMounted) return;
-      if (serverVersion !== null) {
+      if (info) {
         setIsLiveConnected(true);
-        if (serverVersion > currentVersionRef.current) {
+        if (typeof info.version === 'number' && info.version > currentVersionRef.current) {
           await fetchFullData(true);
+        }
+        if (info.theme && info.theme.bgBaseColor) {
+          const incomingThemeVer = Number(info.themeVersion || 0);
+          if (incomingThemeVer > currentThemeVersionRef.current) {
+            currentThemeVersionRef.current = incomingThemeVer;
+            setCurrentTheme(info.theme);
+            saveStoredTheme(info.theme);
+          }
         }
       }
     }, 1500);
@@ -329,6 +350,12 @@ export default function App() {
     // Priority F: Tab focus or screen unlock sync
     const handleVisibilityOrFocus = () => {
       fetchFullData(true);
+      fetchThemeFromApi().then((serverTheme) => {
+        if (isMounted && serverTheme && serverTheme.bgBaseColor) {
+          setCurrentTheme(serverTheme);
+          saveStoredTheme(serverTheme);
+        }
+      });
     };
     window.addEventListener('focus', handleVisibilityOrFocus);
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
@@ -336,6 +363,7 @@ export default function App() {
     return () => {
       isMounted = false;
       unsubscribeSupabase();
+      unsubscribeSupabaseTheme();
       unsubscribeTabs();
       unsubscribeTheme();
       window.removeEventListener('storage', handleStorageChange);
@@ -350,6 +378,14 @@ export default function App() {
   // Manual refresh trigger
   const handleManualRefresh = useCallback(async () => {
     setIsSyncing(true);
+
+    // Also refresh theme from server
+    fetchThemeFromApi().then((serverTheme) => {
+      if (serverTheme && serverTheme.bgBaseColor) {
+        setCurrentTheme(serverTheme);
+        saveStoredTheme(serverTheme);
+      }
+    });
 
     // First attempt direct Supabase query
     const supabaseUsers = await fetchUsersFromSupabase();

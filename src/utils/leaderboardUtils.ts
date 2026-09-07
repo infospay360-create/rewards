@@ -313,10 +313,30 @@ export async function fetchUsersFromApi(): Promise<{ users: LeaderboardUser[]; v
   return null;
 }
 
+export interface ServerVersionInfo {
+  version: number;
+  themeVersion?: number;
+  theme?: any;
+  count?: number;
+  timestamp?: string;
+}
+
+export async function fetchVersionInfoFromApi(): Promise<ServerVersionInfo | null> {
+  try {
+    const timestamp = Date.now();
+    const res = await fetch(`/api/version?_t=${timestamp}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchVersionFromApi(): Promise<number | null> {
   try {
     const timestamp = Date.now();
-    const res = await fetch(`/api/version?_t=${timestamp}`);
+    const res = await fetch(`/api/version?_t=${timestamp}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();
     return data && data.version ? data.version : null;

@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { LeaderboardUser } from '../types';
+import { LeaderboardUser, ThemeSettings } from '../types';
 import { sortLeaderboard } from '../utils/leaderboardUtils';
 import { INITIAL_LEADERBOARD_USERS } from '../data/initialData';
 
@@ -274,5 +274,64 @@ export async function checkSupabaseStatus(): Promise<{
       rowCount: 0,
       error: err?.message || 'Connection failed',
     };
+  }
+}
+
+// Global Supabase Realtime Broadcast channel for all devices across India
+let activeThemeChannel: any = null;
+
+export function subscribeToSupabaseTheme(
+  onThemeChange: (theme: ThemeSettings) => void
+): () => void {
+  try {
+    const supabase = getSupabaseClient();
+    const channelName = 'smartpay360-live-theme-channel';
+    activeThemeChannel = supabase
+      .channel(channelName)
+      .on('broadcast', { event: 'theme_update' }, (message) => {
+        if (message && message.payload && message.payload.bgBaseColor) {
+          onThemeChange(message.payload as ThemeSettings);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      if (activeThemeChannel) {
+        supabase.removeChannel(activeThemeChannel);
+        activeThemeChannel = null;
+      }
+    };
+  } catch (err) {
+    console.warn('[Supabase Realtime Theme] Subscribe error:', err);
+    return () => {};
+  }
+}
+
+export function broadcastThemeToSupabase(theme: ThemeSettings): void {
+  try {
+    const supabase = getSupabaseClient();
+    const channelName = 'smartpay360-live-theme-channel';
+    // If channel is already subscribed, send immediately
+    if (activeThemeChannel) {
+      activeThemeChannel.send({
+        type: 'broadcast',
+        event: 'theme_update',
+        payload: theme,
+      });
+      return;
+    }
+
+    const channel = supabase.channel(channelName);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'theme_update',
+          payload: theme,
+        });
+      }
+    });
+  } catch (err) {
+    console.warn('[Supabase Realtime Theme] Broadcast error:', err);
   }
 }

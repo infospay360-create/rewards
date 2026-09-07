@@ -191,6 +191,7 @@ function persistStore(): void {
 
 // Background Theme Store
 const THEME_FILE = path.join(DATA_DIR, 'theme-store.json');
+let themeVersion = Date.now();
 let cachedTheme: any = {
   presetId: 'midnight_gold',
   name: 'Midnight Obsidian & Gold',
@@ -209,6 +210,7 @@ function initThemeStore(): void {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.bgBaseColor) {
         cachedTheme = parsed;
+        themeVersion = Date.now();
         console.log(`[ThemeStore] Loaded background theme: ${cachedTheme.name} (${cachedTheme.bgBaseColor})`);
         return;
       }
@@ -232,6 +234,7 @@ function persistThemeStore(): void {
 function broadcastThemeUpdate(theme: any) {
   const payload = JSON.stringify({
     type: 'THEME_UPDATED',
+    themeVersion,
     theme,
   });
   for (const client of sseClients) {
@@ -334,6 +337,8 @@ app.get('/api/stream', (req, res) => {
 app.get('/api/version', (req, res) => {
   res.json({
     version: dataVersion,
+    themeVersion: themeVersion,
+    theme: cachedTheme,
     count: cachedUsers.length,
     timestamp: new Date().toISOString(),
   });
@@ -344,6 +349,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     version: dataVersion,
+    themeVersion: themeVersion,
     count: cachedUsers.length,
     connectedClients: sseClients.size,
     timestamp: new Date().toISOString(),
@@ -361,7 +367,10 @@ app.get('/api/users', (req, res) => {
 
 // GET background theme settings
 app.get('/api/theme', (req, res) => {
-  res.json({ theme: cachedTheme });
+  res.json({
+    themeVersion: themeVersion,
+    theme: cachedTheme,
+  });
 });
 
 // POST update background theme settings
@@ -370,6 +379,7 @@ app.post('/api/theme', (req, res) => {
   if (!theme || typeof theme !== 'object' || !theme.bgBaseColor) {
     return res.status(400).json({ error: 'Valid theme object required' });
   }
+  themeVersion = Date.now();
   cachedTheme = {
     ...cachedTheme,
     ...theme,
@@ -377,8 +387,8 @@ app.post('/api/theme', (req, res) => {
   };
   persistThemeStore();
   broadcastThemeUpdate(cachedTheme);
-  console.log(`[Theme API] Updated background theme to: ${cachedTheme.name} (${cachedTheme.bgBaseColor})`);
-  res.json({ success: true, theme: cachedTheme });
+  console.log(`[Theme API] Updated background theme to: ${cachedTheme.name} (${cachedTheme.bgBaseColor}) (v${themeVersion})`);
+  res.json({ success: true, themeVersion: themeVersion, theme: cachedTheme });
 });
 
 // POST replace all users
