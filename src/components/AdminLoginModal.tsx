@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, KeyRound, AlertCircle, X, UserCheck } from 'lucide-react';
-import { verifyAdminCredentials, DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PIN } from '../utils/leaderboardUtils';
+import { Lock, Eye, EyeOff, AlertCircle, X, KeyRound } from 'lucide-react';
+import { verifyAdminCredentials, getFailedAttempts } from '../utils/leaderboardUtils';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -15,25 +15,36 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 }) => {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  const failed = getFailedAttempts();
+  const isLocked = failed.lockedUntil > Date.now();
+  const lockoutSeconds = Math.max(0, Math.ceil((failed.lockedUntil - Date.now()) / 1000));
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) {
+      setError(`Temporary security lockout. Please wait ${lockoutSeconds}s.`);
+      return;
+    }
+
     if (verifyAdminCredentials(username, pin)) {
       setError(null);
       onLoginSuccess();
       onClose();
     } else {
-      setError('Invalid Admin ID or PIN. Please check credentials.');
+      const currentFailed = getFailedAttempts();
+      if (currentFailed.lockedUntil > Date.now()) {
+        const remaining = Math.ceil((currentFailed.lockedUntil - Date.now()) / 1000);
+        setError(`Too many failed attempts. Locked out for ${remaining}s.`);
+      } else {
+        const left = Math.max(1, 5 - currentFailed.count);
+        setError(`Invalid credentials. ${left} attempts remaining.`);
+      }
     }
-  };
-
-  const handleFillDemoCredentials = () => {
-    setUsername(DEFAULT_ADMIN_USERNAME);
-    setPin(DEFAULT_ADMIN_PIN);
-    setError(null);
   };
 
   return (
@@ -82,13 +93,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             <input
               type="text"
               required
-              placeholder="e.g. admin or spay360"
+              disabled={isLocked}
+              placeholder="e.g. spay360 or admin"
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
                 setError(null);
               }}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition disabled:opacity-50"
             />
           </div>
 
@@ -96,34 +108,27 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Security PIN / Password
             </label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value);
-                setError(null);
-              }}
-              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
-            />
-          </div>
-
-          {/* Quick Default Credentials Pill */}
-          <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between text-xs">
-            <div className="text-slate-400">
-              <span>Default Login: </span>
-              <span className="font-mono text-amber-300 font-bold">admin</span>
-              <span className="text-slate-500"> / </span>
-              <span className="font-mono text-amber-300 font-bold">admin</span>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                disabled={isLocked}
+                placeholder="Enter password"
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value);
+                  setError(null);
+                }}
+                className="w-full pl-3.5 pr-10 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-0.5"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleFillDemoCredentials}
-              className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 underline cursor-pointer"
-            >
-              Auto-fill
-            </button>
           </div>
 
           <div className="pt-2 flex items-center justify-between">
@@ -138,7 +143,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             <button
               id="btn-admin-login-submit"
               type="submit"
-              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 shadow-lg shadow-orange-500/20 active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+              disabled={isLocked}
+              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 shadow-lg shadow-orange-500/20 active:scale-95 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
             >
               <KeyRound className="w-4 h-4" />
               <span>Login as Admin</span>

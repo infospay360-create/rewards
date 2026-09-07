@@ -407,16 +407,130 @@ export async function resetUsersOnApi(): Promise<LeaderboardUser[] | null> {
 }
 
 // Admin Authentication Helpers
-export const DEFAULT_ADMIN_USERNAME = 'admin';
-export const DEFAULT_ADMIN_PIN = 'admin';
+export const ADMIN_CUSTOM_PASS_KEY = 'smartpay360_admin_custom_pass_v1';
+export const ADMIN_CUSTOM_USER_KEY = 'smartpay360_admin_custom_user_v1';
+export const ADMIN_FAILED_ATTEMPTS_KEY = 'smartpay360_admin_failed_attempts_v1';
+
+export function getStoredCustomPassword(): string | null {
+  try {
+    return localStorage.getItem(ADMIN_CUSTOM_PASS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAdminCustomPassword(newPassword: string): boolean {
+  try {
+    if (!newPassword || newPassword.trim().length < 4) return false;
+    localStorage.setItem(ADMIN_CUSTOM_PASS_KEY, newPassword.trim());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getStoredCustomUsername(): string | null {
+  try {
+    return localStorage.getItem(ADMIN_CUSTOM_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAdminCustomUsername(newUser: string): boolean {
+  try {
+    if (!newUser || newUser.trim().length < 3) return false;
+    localStorage.setItem(ADMIN_CUSTOM_USER_KEY, newUser.trim().toLowerCase());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getFailedAttempts(): { count: number; lockedUntil: number } {
+  try {
+    const raw = localStorage.getItem(ADMIN_FAILED_ATTEMPTS_KEY);
+    if (!raw) return { count: 0, lockedUntil: 0 };
+    const parsed = JSON.parse(raw);
+    return {
+      count: Number(parsed.count || 0),
+      lockedUntil: Number(parsed.lockedUntil || 0),
+    };
+  } catch {
+    return { count: 0, lockedUntil: 0 };
+  }
+}
+
+export function recordFailedAttempt(): { count: number; lockedUntil: number } {
+  const current = getFailedAttempts();
+  const newCount = current.count + 1;
+  let lockedUntil = current.lockedUntil;
+  // If 5 or more failed attempts, lock for 60 seconds
+  if (newCount >= 5) {
+    lockedUntil = Date.now() + 60 * 1000;
+  }
+  try {
+    localStorage.setItem(ADMIN_FAILED_ATTEMPTS_KEY, JSON.stringify({ count: newCount, lockedUntil }));
+  } catch {}
+  return { count: newCount, lockedUntil };
+}
+
+export function resetFailedAttempts(): void {
+  try {
+    localStorage.removeItem(ADMIN_FAILED_ATTEMPTS_KEY);
+  } catch {}
+}
 
 export function verifyAdminCredentials(username: string, pin: string): boolean {
   const u = username.trim().toLowerCase();
-  const p = pin.trim().toLowerCase();
-  return (
-    (u === 'admin' || u === 'spay360' || u === 'smartpay360' || u === 'spay360.info@gmail.com') &&
-    (p === 'admin' || p === 'admin360' || p === '360' || p === '123456')
-  );
+  const p = pin.trim();
+
+  // Check lockout
+  const failed = getFailedAttempts();
+  if (failed.lockedUntil > Date.now()) {
+    return false;
+  }
+
+  // Allowed personal usernames
+  const allowedUsernames = [
+    'admin',
+    'spay360',
+    'smartpay360',
+    'spay360.info@gmail.com',
+  ];
+
+  const customUser = getStoredCustomUsername();
+  if (customUser && !allowedUsernames.includes(customUser)) {
+    allowedUsernames.push(customUser);
+  }
+
+  if (!allowedUsernames.includes(u)) {
+    recordFailedAttempt();
+    return false;
+  }
+
+  // If custom password was set, ONLY accept the custom password
+  const customPass = getStoredCustomPassword();
+  if (customPass) {
+    if (p === customPass) {
+      resetFailedAttempts();
+      return true;
+    } else {
+      recordFailedAttempt();
+      return false;
+    }
+  }
+
+  // Default initial passwords (user can change this anytime in Admin Portal)
+  const allowedPins = ['admin', 'admin360', '360', 'smartpay360', '123456'];
+
+  const isValid = allowedPins.includes(p.toLowerCase()) || allowedPins.includes(p);
+  if (isValid) {
+    resetFailedAttempts();
+  } else {
+    recordFailedAttempt();
+  }
+  return isValid;
 }
 
 export function checkAdminSession(): boolean {

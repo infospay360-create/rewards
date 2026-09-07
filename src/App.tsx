@@ -31,6 +31,7 @@ import { NoticeBanner } from './components/NoticeBanner';
 import { BroadcastModal } from './components/BroadcastModal';
 import { UserEditModal } from './components/UserEditModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { AdminPortal } from './components/AdminPortal';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import {
   fetchUsersFromSupabase,
@@ -40,6 +41,23 @@ import {
   subscribeToSupabaseRealtime,
 } from './lib/supabase';
 
+// Helper to check if current URL is for Admin Portal (/spay-admin, /admin, etc.)
+const checkIsAdminRoute = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return (
+    path.includes('/spay-admin') ||
+    path.includes('/admin') ||
+    hash.includes('spay-admin') ||
+    hash.includes('admin') ||
+    search.includes('portal=admin') ||
+    search.includes('admin=true') ||
+    search.includes('admin=login')
+  );
+};
+
 export default function App() {
   const [users, setUsers] = useState<LeaderboardUser[]>(() => {
     return sortLeaderboard(loadUsersFromStorage());
@@ -47,6 +65,11 @@ export default function App() {
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     return checkAdminSession();
+  });
+
+  // Dedicated View Routing ('leaderboard' vs 'admin')
+  const [currentView, setCurrentView] = useState<'leaderboard' | 'admin'>(() => {
+    return checkIsAdminRoute() ? 'admin' : 'leaderboard';
   });
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -58,6 +81,40 @@ export default function App() {
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
   const currentVersionRef = useRef<number>(0);
+
+  // Sync route changes (browser back/forward & hash changes)
+  useEffect(() => {
+    const handleLocationChange = () => {
+      if (checkIsAdminRoute()) {
+        setCurrentView('admin');
+      } else {
+        setCurrentView('leaderboard');
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const navigateToAdmin = useCallback(() => {
+    try {
+      window.history.pushState({}, '', '/spay-admin');
+    } catch {}
+    setCurrentView('admin');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const navigateToLeaderboard = useCallback(() => {
+    try {
+      window.history.pushState({}, '', '/');
+    } catch {}
+    setCurrentView('leaderboard');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Rewards Modal state (Top 10 Cash vs 40 Lucky Draw Gifts)
   const [rewardsModalState, setRewardsModalState] = useState<{
@@ -507,7 +564,9 @@ export default function App() {
       {/* Top Navbar with Admin controls */}
       <Navbar
         isAdmin={isAdmin}
-        onOpenLogin={() => setIsLoginModalOpen(true)}
+        currentView={currentView}
+        onNavigateToAdmin={navigateToAdmin}
+        onNavigateToLeaderboard={navigateToLeaderboard}
         onLogout={handleAdminLogout}
         onOpenBroadcast={() => setIsBroadcastOpen(true)}
         onResetData={handleResetData}
@@ -520,60 +579,81 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
-        <TopActionsBar
-          onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
-          onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
-          onManualRefresh={handleManualRefresh}
-          onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
-          isSyncing={isSyncing}
-          isLiveConnected={isLiveConnected}
-          isSupabaseLive={isSupabaseLive}
-          totalUsers={users.length}
-          totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
-        />
-
-        {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
-        {isAdmin && (
-          <QuickUpgradeBar
+        {currentView === 'admin' ? (
+          <AdminPortal
             isAdmin={isAdmin}
-            onOpenLogin={() => setIsLoginModalOpen(true)}
-            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
             users={users}
+            onLoginSuccess={handleAdminLoginSuccess}
+            onLogout={handleAdminLogout}
+            onNavigateToLeaderboard={navigateToLeaderboard}
             onUpgradeUser={handleUpgradeUser}
-          />
-        )}
-
-        {/* Top 3 Podium Highlights with Cash Badges - Front & Center */}
-        {users.length >= 3 && (
-          <LeaderboardPodium
-            isAdmin={isAdmin}
-            topThree={topThree}
             onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
-            onSelectUser={(u) => {
-              if (isAdmin) setEditingUser(u);
-            }}
+            onEditUser={(u) => setEditingUser(u)}
+            onOpenBroadcast={() => setIsBroadcastOpen(true)}
+            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+            onManualRefresh={handleManualRefresh}
+            onResetData={handleResetData}
+            isSyncing={isSyncing}
+            showToast={showToast}
           />
+        ) : (
+          <>
+            {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
+            <TopActionsBar
+              onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
+              onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
+              onManualRefresh={handleManualRefresh}
+              onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+              isSyncing={isSyncing}
+              isLiveConnected={isLiveConnected}
+              isSupabaseLive={isSupabaseLive}
+              totalUsers={users.length}
+              totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
+            />
+
+            {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
+            {isAdmin && (
+              <QuickUpgradeBar
+                isAdmin={isAdmin}
+                onOpenLogin={() => {}}
+                onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+                users={users}
+                onUpgradeUser={handleUpgradeUser}
+              />
+            )}
+
+            {/* Top 3 Podium Highlights with Cash Badges - Front & Center */}
+            {users.length >= 3 && (
+              <LeaderboardPodium
+                isAdmin={isAdmin}
+                topThree={topThree}
+                onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
+                onSelectUser={(u) => {
+                  if (isAdmin) setEditingUser(u);
+                }}
+              />
+            )}
+
+            {/* Complete Live Leaderboard Table with Top 10 Cash status - Immediately Visible */}
+            <LeaderboardTable
+              isAdmin={isAdmin}
+              users={users}
+              onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
+              onEditUser={(u) => {
+                if (isAdmin) setEditingUser(u);
+              }}
+            />
+
+            {/* Public User "Check My Live Rank" Search Card */}
+            <CheckRankCard users={users} />
+
+            {/* Live Metrics: Total User, Total Direct, Total Ticket */}
+            <StatsCards users={users} />
+
+            {/* Rules & Contest Notice */}
+            <NoticeBanner />
+          </>
         )}
-
-        {/* Complete Live Leaderboard Table with Top 10 Cash status - Immediately Visible */}
-        <LeaderboardTable
-          isAdmin={isAdmin}
-          users={users}
-          onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
-          onEditUser={(u) => {
-            if (isAdmin) setEditingUser(u);
-          }}
-        />
-
-        {/* Public User "Check My Live Rank" Search Card */}
-        <CheckRankCard users={users} />
-
-        {/* Live Metrics: Total User, Total Direct, Total Ticket */}
-        <StatsCards users={users} />
-
-        {/* Rules & Contest Notice */}
-        <NoticeBanner />
       </main>
 
       {/* Footer */}

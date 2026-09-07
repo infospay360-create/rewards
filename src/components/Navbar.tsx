@@ -3,7 +3,9 @@ import { Trophy, Flame, Share2, RotateCcw, Calendar, Ticket, PlusCircle, ShieldC
 
 interface NavbarProps {
   isAdmin: boolean;
-  onOpenLogin: () => void;
+  currentView?: 'leaderboard' | 'admin';
+  onNavigateToAdmin?: () => void;
+  onNavigateToLeaderboard?: () => void;
   onLogout: () => void;
   onOpenBroadcast: () => void;
   onResetData: () => void;
@@ -16,7 +18,9 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   isAdmin,
-  onOpenLogin,
+  currentView = 'leaderboard',
+  onNavigateToAdmin,
+  onNavigateToLeaderboard,
   onLogout,
   onOpenBroadcast,
   onResetData,
@@ -32,35 +36,37 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Brand & Logo */}
           <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/20 text-white font-black text-xl">
-              <Trophy className="w-6 h-6 text-white" />
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg md:text-xl font-black tracking-tight text-white flex items-center gap-1.5">
-                  <span>SMARTPAY360</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-sm uppercase tracking-wider animate-pulse">
-                    <Flame className="w-3 h-3 fill-current" /> Live
-                  </span>
-                </h1>
-                {isAdmin ? (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                    <ShieldCheck className="w-3 h-3 text-emerald-400" /> Admin Mode
-                  </span>
-                ) : (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">
-                    Public View
-                  </span>
-                )}
+            <button
+              type="button"
+              onClick={onNavigateToLeaderboard}
+              className="flex items-center gap-3 text-left group cursor-pointer"
+            >
+              <div className="relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 shadow-lg shadow-orange-500/20 text-white font-black text-xl group-hover:scale-105 transition-transform">
+                <Trophy className="w-6 h-6 text-white" />
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium hidden sm:block">
-                TOP 10 CASH PRIZES • 👥 5 DIRECT = 🎟️ 1 TICKET • LIVE LEADERBOARD
-              </p>
-            </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg md:text-xl font-black tracking-tight text-white flex items-center gap-1.5">
+                    <span>SMARTPAY360</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-sm uppercase tracking-wider animate-pulse">
+                      <Flame className="w-3 h-3 fill-current" /> Live
+                    </span>
+                  </h1>
+                  {isAdmin && (
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> Admin Mode
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 font-medium hidden sm:block">
+                  TOP 10 CASH PRIZES • 👥 5 DIRECT = 🎟️ 1 TICKET • LIVE LEADERBOARD
+                </p>
+              </div>
+            </button>
           </div>
 
           {/* Center Badges & Buttons (Desktop) */}
@@ -85,18 +91,29 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {isAdmin ? (
+            {isAdmin && (
               <>
-                <button
-                  id="btn-quick-upgrade-nav"
-                  type="button"
-                  onClick={onScrollToUpgrade}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20 hover:brightness-110 transition active:scale-95 cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Admin Panel</span>
-                  <span className="sm:hidden">Admin</span>
-                </button>
+                {currentView === 'admin' ? (
+                  <button
+                    type="button"
+                    onClick={onNavigateToLeaderboard}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition cursor-pointer"
+                  >
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span>View Leaderboard</span>
+                  </button>
+                ) : (
+                  <button
+                    id="btn-quick-upgrade-nav"
+                    type="button"
+                    onClick={onNavigateToAdmin || onScrollToUpgrade}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 shadow-md shadow-orange-500/20 hover:brightness-110 transition active:scale-95 cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Admin Panel</span>
+                    <span className="sm:hidden">Admin</span>
+                  </button>
+                )}
 
                 <button
                   id="btn-admin-logout"
@@ -109,16 +126,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <span className="hidden md:inline">Logout</span>
                 </button>
               </>
-            ) : (
-              <button
-                id="btn-open-admin-login"
-                type="button"
-                onClick={onOpenLogin}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 hover:border-amber-500 transition shadow-sm active:scale-95 cursor-pointer"
-              >
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Admin Login</span>
-              </button>
             )}
 
             <button
