@@ -23,7 +23,7 @@ import {
   Share2,
   RotateCcw,
 } from 'lucide-react';
-import { LeaderboardUser } from '../types';
+import { LeaderboardUser, ThemeSettings } from '../types';
 import {
   verifyAdminCredentials,
   getStoredCustomPassword,
@@ -34,10 +34,13 @@ import {
   resetFailedAttempts,
 } from '../utils/leaderboardUtils';
 import { QuickUpgradeBar } from './QuickUpgradeBar';
+import { ThemeSelectorCard } from './ThemeSelectorCard';
 
 interface AdminPortalProps {
   isAdmin: boolean;
   users: LeaderboardUser[];
+  currentTheme: ThemeSettings;
+  onThemeChange: (newTheme: ThemeSettings, syncToServer?: boolean) => void;
   onLoginSuccess: () => void;
   onLogout: () => void;
   onNavigateToLeaderboard: () => void;
@@ -61,6 +64,8 @@ interface AdminPortalProps {
 export const AdminPortal: React.FC<AdminPortalProps> = ({
   isAdmin,
   users,
+  currentTheme,
+  onThemeChange,
   onLoginSuccess,
   onLogout,
   onNavigateToLeaderboard,
@@ -392,6 +397,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         onOpenSupabaseModal={onOpenSupabaseModal}
         users={users}
         onUpgradeUser={onUpgradeUser}
+      />
+
+      {/* Admin Background & Theme Customizer */}
+      <ThemeSelectorCard
+        currentTheme={currentTheme}
+        onThemeChange={onThemeChange}
+        showToast={showToast}
       />
 
       {/* Grid: 1. Personal Password & Security Manager, 2. Fast Tools & Sync */}

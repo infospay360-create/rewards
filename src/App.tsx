@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ShieldCheck } from 'lucide-react';
-import { LeaderboardUser } from './types';
+import { LeaderboardUser, ThemeSettings } from './types';
 import { INITIAL_LEADERBOARD_USERS } from './data/initialData';
 import {
   loadUsersFromStorage,
@@ -19,6 +19,15 @@ import {
   broadcastToOtherTabs,
   subscribeToTabBroadcasts,
 } from './utils/leaderboardUtils';
+import {
+  getStoredTheme,
+  saveStoredTheme,
+  fetchThemeFromApi,
+  saveThemeToApi,
+  broadcastThemeChange,
+  subscribeToThemeBroadcasts,
+  THEME_STORAGE_KEY,
+} from './utils/themePresets';
 import { Navbar } from './components/Navbar';
 import { TopActionsBar } from './components/TopActionsBar';
 import { RewardsModal } from './components/RewardsModal';
@@ -81,6 +90,23 @@ export default function App() {
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
   const currentVersionRef = useRef<number>(0);
+
+  // Background theme state
+  const [currentTheme, setCurrentTheme] = useState<ThemeSettings>(getStoredTheme);
+
+  const handleThemeChange = useCallback(
+    async (newTheme: ThemeSettings, syncToServer = true) => {
+      setCurrentTheme(newTheme);
+      saveStoredTheme(newTheme);
+      broadcastThemeChange(newTheme);
+      if (syncToServer) {
+        saveThemeToApi(newTheme).catch((err) => {
+          console.warn('[Theme] Sync error:', err);
+        });
+      }
+    },
+    []
+  );
 
   // Sync route changes (browser back/forward & hash changes)
   useEffect(() => {
@@ -203,6 +229,21 @@ export default function App() {
       }
     });
 
+    // Listen for cross-tab theme broadcasts
+    const unsubscribeTheme = subscribeToThemeBroadcasts((newTheme) => {
+      if (isMounted && newTheme && newTheme.bgBaseColor) {
+        setCurrentTheme(newTheme);
+      }
+    });
+
+    // Fetch theme from central server
+    fetchThemeFromApi().then((serverTheme) => {
+      if (isMounted && serverTheme && serverTheme.bgBaseColor) {
+        setCurrentTheme(serverTheme);
+        saveStoredTheme(serverTheme);
+      }
+    });
+
     // Priority C: Cross-tab localStorage storage events
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'smartpay360_leaderboard_v1' && e.newValue) {
@@ -213,6 +254,16 @@ export default function App() {
           }
         } catch {
           // ignore parsing error
+        }
+      }
+      if (e.key === THEME_STORAGE_KEY && e.newValue) {
+        try {
+          const parsedTheme = JSON.parse(e.newValue);
+          if (parsedTheme && parsedTheme.bgBaseColor) {
+            setCurrentTheme(parsedTheme);
+          }
+        } catch {
+          // ignore
         }
       }
     };
@@ -233,6 +284,10 @@ export default function App() {
             const data = JSON.parse(event.data);
             if (data && Array.isArray(data.users) && data.users.length > 0) {
               applyUsersUpdate(data.users, data.version);
+            }
+            if (data && data.theme && data.theme.bgBaseColor) {
+              setCurrentTheme(data.theme);
+              saveStoredTheme(data.theme);
             }
           } catch (e) {
             console.error('[SSE] Parse error:', e);
@@ -282,6 +337,7 @@ export default function App() {
       isMounted = false;
       unsubscribeSupabase();
       unsubscribeTabs();
+      unsubscribeTheme();
       window.removeEventListener('storage', handleStorageChange);
       if (eventSource) eventSource.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -560,7 +616,68 @@ export default function App() {
   const topThree = useMemo(() => users.slice(0, 3), [users]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans">
+    <div
+      className="min-h-screen text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans relative overflow-x-hidden transition-colors duration-500"
+      style={{ backgroundColor: currentTheme.bgBaseColor || '#07090e' }}
+    >
+      {/* Dynamic Ambient Background Illumination for High-End Depth */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-opacity duration-700"
+        style={{
+          opacity:
+            currentTheme.glowIntensity === 'off'
+              ? 0
+              : currentTheme.glowIntensity === 'subtle'
+              ? 0.45
+              : 1,
+        }}
+      >
+        {/* Subtle Warm Crown Glow at Top */}
+        <div
+          className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[400px] blur-[120px] rounded-full pointer-events-none transition-all duration-700"
+          style={{
+            background: `radial-gradient(ellipse at center, ${currentTheme.glowColor1 || 'rgba(245,158,11,0.12)'} 0%, transparent 70%)`,
+          }}
+        />
+        {/* Atmospheric Glow in Background */}
+        <div
+          className="absolute top-[35%] right-[-5%] w-[600px] h-[600px] blur-[140px] rounded-full pointer-events-none transition-all duration-700"
+          style={{
+            background: `radial-gradient(circle, ${currentTheme.glowColor2 || 'rgba(37,99,235,0.06)'} 0%, transparent 70%)`,
+          }}
+        />
+        <div
+          className="absolute top-[65%] left-[-5%] w-[600px] h-[600px] blur-[150px] rounded-full pointer-events-none transition-all duration-700"
+          style={{
+            background: `radial-gradient(circle, ${currentTheme.glowColor1 || 'rgba(245,158,11,0.05)'} 0%, transparent 70%)`,
+          }}
+        />
+
+        {/* Dynamic Texture Pattern Overlay */}
+        {currentTheme.patternStyle === 'dots' && (
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:28px_28px] opacity-[0.05]" />
+        )}
+        {currentTheme.patternStyle === 'grid' && (
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+            }}
+          />
+        )}
+        {currentTheme.patternStyle === 'mesh' && (
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(45deg, #ffffff 0, #ffffff 1px, transparent 0, transparent 40px)',
+            }}
+          />
+        )}
+      </div>
+
       {/* Top Navbar with Admin controls */}
       <Navbar
         isAdmin={isAdmin}
@@ -578,11 +695,13 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {currentView === 'admin' ? (
           <AdminPortal
             isAdmin={isAdmin}
             users={users}
+            currentTheme={currentTheme}
+            onThemeChange={handleThemeChange}
             onLoginSuccess={handleAdminLoginSuccess}
             onLogout={handleAdminLogout}
             onNavigateToLeaderboard={navigateToLeaderboard}
@@ -657,15 +776,23 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-8 px-4 text-center text-xs text-slate-500">
+      <footer className="relative z-10 border-t border-slate-800/80 bg-[#080c16]/90 backdrop-blur-md py-8 px-4 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400">SMARTPAY360</span>
-            <span>•</span>
-            <span>Live Ticket & Top 10 Cash Leaderboard</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white text-xs font-black shadow-sm">
+              S
+            </div>
+            <span className="font-extrabold text-white tracking-wide">SMARTPAY360</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-400 font-medium">Live Ticket & Lucky Draw Leaderboard</span>
           </div>
-          <div className="text-slate-400">
-            👥 5 Direct = 🎟️ 1 Ticket • 💰 Cash Rewards Prize Pool (Top 10)
+          <div className="text-slate-400 font-medium flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-slate-800/80 text-emerald-400 border border-slate-700/60 text-[11px] font-bold">
+              👥 5 Direct = 🎟️ 1 Ticket
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-slate-800/80 text-amber-300 border border-slate-700/60 text-[11px] font-bold">
+              💰 Top 10 Cash Rewards
+            </span>
           </div>
         </div>
       </footer>

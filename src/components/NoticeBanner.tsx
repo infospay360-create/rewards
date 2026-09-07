@@ -5,70 +5,72 @@ export const NoticeBanner: React.FC = () => {
   return (
     <div className="space-y-4 mb-10">
       {/* Rules Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-4 sm:p-6 shadow-xl">
+      <div className="rounded-2xl bg-[#0c1220]/80 backdrop-blur-xl border border-amber-500/30 p-4 sm:p-6 shadow-[0_12px_40px_rgba(245,158,11,0.08)]">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm shrink-0">
               <Target className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                  Reward Program
+                <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                  Official Reward Program
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600/30 text-red-300 border border-red-500/40">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   LIVE CONTEST
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
+              <h3 className="text-base sm:text-lg font-black text-white mt-1">
                 🎯 LUCKY DRAW RULES: 👥 EVERY 5 DIRECTS ➜ 🎟️ 1 TICKET
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300">
-                Every 5 direct referrals awards 1 Lucky Draw ticket! <strong>Earn a Free Branded T-Shirt on your 1st 5 directs!</strong> Members with the most tickets increase their chances to win 40 Mega Lucky Draw Prizes (10 Real Gifts + 30 E-Wallets)!
+              <p className="text-xs sm:text-sm text-slate-300 mt-0.5 leading-relaxed">
+                Every 5 direct referrals awards 1 Lucky Draw ticket! <strong className="text-amber-300">Earn a Free Branded T-Shirt on your 1st 5 directs!</strong> Members with the most tickets increase their chances to win 40 Mega Lucky Draw Prizes (10 Real Gifts + 30 E-Wallets)!
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700/80 shrink-0">
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#080d19]/90 border border-white/[0.1] shrink-0 shadow-inner">
             <Calendar className="w-4 h-4 text-amber-400" />
             <div className="text-left">
-              <span className="text-[10px] text-slate-400 block font-semibold uppercase">Contest Dates</span>
-              <span className="text-xs sm:text-sm font-bold text-amber-300">1 Sep to 31 Oct</span>
+              <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Contest Dates</span>
+              <span className="text-xs sm:text-sm font-black text-amber-300">1 Sep to 31 Oct</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Notice & Motivation Card */}
-      <div className="rounded-2xl bg-slate-900/70 border border-slate-800 p-4 sm:p-6">
+      <div className="rounded-2xl bg-[#0c1220]/80 backdrop-blur-xl border border-white/[0.08] p-4 sm:p-6 shadow-[0_12px_40px_rgba(0,0,0,0.3)]">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
           {/* Official Disclaimer in English */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
               <AlertCircle className="w-4 h-4" />
               <span>⚠️ IMPORTANT NOTICE</span>
             </div>
-            <ul className="space-y-1.5 text-xs sm:text-sm text-slate-300">
-              <li className="flex items-center gap-2">
-                <span className="text-sky-400">🔹</span>
-                <span>This display is strictly a <strong>CURRENT PERFORMANCE UPDATE</strong>.</span>
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
+              <li className="flex items-center gap-2.5">
+                <span className="text-amber-400 font-bold">▪</span>
+                <span>This display is strictly a <strong className="text-white">CURRENT PERFORMANCE UPDATE</strong>.</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="text-sky-400">🔹</span>
-                <span>This is <strong>NOT THE FINAL WINNER LIST</strong>.</span>
+              <li className="flex items-center gap-2.5">
+                <span className="text-amber-400 font-bold">▪</span>
+                <span>This is <strong className="text-white">NOT THE FINAL WINNER LIST</strong>.</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="text-sky-400">🔹</span>
+              <li className="flex items-center gap-2.5">
+                <span className="text-amber-400 font-bold">▪</span>
                 <span>Rankings update dynamically in real time based on active direct referrals.</span>
               </li>
             </ul>
           </div>
 
           {/* Motivational Call to Action */}
-          <div className="rounded-xl bg-slate-950/80 p-4 border border-slate-800 text-center space-y-2">
+          <div className="rounded-2xl bg-[#080d19]/90 p-4 sm:p-5 border border-white/[0.08] text-center space-y-2.5 shadow-inner">
             <div className="text-xs sm:text-sm font-black text-white flex items-center justify-center gap-2">
-              <Rocket className="w-4 h-4 text-amber-400" />
-              <span>🚀 BOOST DIRECTS • MULTIPLY TICKETS • 🏆 REACH THE TOP OF THE LEADERBOARD!</span>
+              <Rocket className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">
+                BOOST DIRECTS • MULTIPLY TICKETS • REACH THE TOP!
+              </span>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-1 text-rose-400">

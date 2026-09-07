@@ -36,3 +36,29 @@ export interface AdminCredentials {
   pin: string;
 }
 
+export type BackgroundPresetId =
+  | 'midnight_gold'
+  | 'royal_navy'
+  | 'emerald_matrix'
+  | 'titanium_onyx'
+  | 'burgundy_ruby'
+  | 'cyber_violet'
+  | 'ocean_teal'
+  | 'stealth_dark'
+  | 'custom';
+
+export type PatternStyle = 'dots' | 'grid' | 'mesh' | 'none';
+export type GlowIntensity = 'vibrant' | 'subtle' | 'off';
+
+export interface ThemeSettings {
+  presetId: BackgroundPresetId;
+  name: string;
+  bgBaseColor: string;
+  glowColor1: string;
+  glowColor2: string;
+  patternStyle: PatternStyle;
+  glowIntensity: GlowIntensity;
+  customHex?: string;
+  updatedAt?: string;
+}
+

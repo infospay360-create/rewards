@@ -189,6 +189,60 @@ function persistStore(): void {
   }
 }
 
+// Background Theme Store
+const THEME_FILE = path.join(DATA_DIR, 'theme-store.json');
+let cachedTheme: any = {
+  presetId: 'midnight_gold',
+  name: 'Midnight Obsidian & Gold',
+  bgBaseColor: '#07090e',
+  glowColor1: 'rgba(245, 158, 11, 0.12)',
+  glowColor2: 'rgba(37, 99, 235, 0.06)',
+  patternStyle: 'dots',
+  glowIntensity: 'vibrant',
+  updatedAt: new Date().toISOString(),
+};
+
+function initThemeStore(): void {
+  try {
+    if (fs.existsSync(THEME_FILE)) {
+      const raw = fs.readFileSync(THEME_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.bgBaseColor) {
+        cachedTheme = parsed;
+        console.log(`[ThemeStore] Loaded background theme: ${cachedTheme.name} (${cachedTheme.bgBaseColor})`);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('[ThemeStore] Could not load theme file:', err);
+  }
+}
+
+function persistThemeStore(): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(THEME_FILE, JSON.stringify(cachedTheme, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[ThemeStore] Failed to save theme:', err);
+  }
+}
+
+function broadcastThemeUpdate(theme: any) {
+  const payload = JSON.stringify({
+    type: 'THEME_UPDATED',
+    theme,
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
 // Broadcast real-time update to all connected browsers and mobile devices
 function broadcastLiveUpdate(source = 'update') {
   const payload = JSON.stringify({
@@ -210,6 +264,7 @@ function broadcastLiveUpdate(source = 'update') {
 
 // Initialize store at startup
 initStore();
+initThemeStore();
 
 // ==========================================
 // ANTI-CACHE & CORS MIDDLEWARE FOR ALL /api
@@ -249,6 +304,7 @@ app.get('/api/stream', (req, res) => {
     version: dataVersion,
     count: cachedUsers.length,
     users: cachedUsers,
+    theme: cachedTheme,
   });
   res.write(`data: ${initialPayload}\n\n`);
 
@@ -301,6 +357,28 @@ app.get('/api/users', (req, res) => {
     count: cachedUsers.length,
     users: cachedUsers,
   });
+});
+
+// GET background theme settings
+app.get('/api/theme', (req, res) => {
+  res.json({ theme: cachedTheme });
+});
+
+// POST update background theme settings
+app.post('/api/theme', (req, res) => {
+  const { theme } = req.body;
+  if (!theme || typeof theme !== 'object' || !theme.bgBaseColor) {
+    return res.status(400).json({ error: 'Valid theme object required' });
+  }
+  cachedTheme = {
+    ...cachedTheme,
+    ...theme,
+    updatedAt: new Date().toISOString(),
+  };
+  persistThemeStore();
+  broadcastThemeUpdate(cachedTheme);
+  console.log(`[Theme API] Updated background theme to: ${cachedTheme.name} (${cachedTheme.bgBaseColor})`);
+  res.json({ success: true, theme: cachedTheme });
 });
 
 // POST replace all users
