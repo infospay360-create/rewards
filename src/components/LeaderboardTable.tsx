@@ -225,10 +225,9 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 const { needed, currentInCycle, percentage } = calculateProgressToNextTicket(user.directCount);
                 const isNearTicket = user.directCount % 5 === 4;
                 const cashPrize = getCashPrizeForRank(absoluteRank);
-                // Exact badges from poster:
-                // SPAY371265 (Santanu Bhowmik) has T-Shirt Won in poster; SPAY350275, SPAY550099, SPAY900542 have 1 Award
-                const hasTshirt = user.directCount >= 5 || user.userId === 'SPAY371265';
-                const hasOneAward = !hasTshirt && (user.directCount === 4 || (absoluteRank >= 7 && absoluteRank <= 9));
+                // T-Shirt Won strictly requires 5 or more direct referrals (1st 5 Directs = 1 Ticket + Free SmartPay360 T-Shirt)
+                const hasTshirt = user.directCount >= 5;
+                const hasOneAward = !hasTshirt && user.directCount === 4;
 
                 // Extract two-digit monogram (e.g. SPAY670109 -> '67')
                 const monogramDigits = user.userId.replace('SPAY', '').slice(0, 2) || String(idx + 1);

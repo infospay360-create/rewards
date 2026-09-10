@@ -30,7 +30,7 @@ import {
   THEME_STORAGE_KEY,
 } from './utils/themePresets';
 import { Navbar } from './components/Navbar';
-import { TopActionsBar } from './components/TopActionsBar';
+import { TopActionsBar, MainSectionTab } from './components/TopActionsBar';
 import { RewardsModal } from './components/RewardsModal';
 import { CheckRankCard } from './components/CheckRankCard';
 import { StatsCards } from './components/StatsCards';
@@ -45,7 +45,8 @@ import { AdminPortal } from './components/AdminPortal';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import { SmartPayPosterHeader } from './components/SmartPayPosterHeader';
 import { SmartPayPosterFooter } from './components/SmartPayPosterFooter';
-import { LuckyDrawWinnersBlock } from './components/LuckyDrawWinnersBlock';
+import { Top10CashSection } from './components/Top10CashSection';
+import { LuckyDrawSection3D } from './components/LuckyDrawSection3D';
 import {
   fetchUsersFromSupabase,
   upsertUserInSupabase,
@@ -95,7 +96,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
-  const [isLuckyDrawFoldOpen, setIsLuckyDrawFoldOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<MainSectionTab>('leaderboard');
   const currentVersionRef = useRef<number>(0);
   const currentThemeVersionRef = useRef<number>(0);
 
@@ -728,8 +729,14 @@ export default function App() {
         onOpenBroadcast={() => setIsBroadcastOpen(true)}
         onResetData={handleResetData}
         onScrollToUpgrade={scrollToUpgrade}
-        onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
-        onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
+        onOpenCashRewards={() => {
+          setActiveSection('cash');
+          window.scrollTo({ top: 380, behavior: 'smooth' });
+        }}
+        onOpenGiftsModal={() => {
+          setActiveSection('lucky_draw');
+          window.scrollTo({ top: 380, behavior: 'smooth' });
+        }}
         totalUsers={users.length}
         totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
         isLight={currentTheme.isLight}
@@ -761,10 +768,10 @@ export default function App() {
             {/* SmartPay 360 Official Poster Branding Header Banner */}
             <SmartPayPosterHeader currentTheme={currentTheme} />
 
-            {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
+            {/* Top 3D Navigation Switcher (Leaderboard | 10 Cash Rewards | 40 Lucky Draw) */}
             <TopActionsBar
-              onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
-              onOpenGiftsModal={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
+              activeSection={activeSection}
+              onChangeSection={setActiveSection}
               onManualRefresh={handleManualRefresh}
               onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
               isSyncing={isSyncing}
@@ -773,59 +780,63 @@ export default function App() {
               totalUsers={users.length}
               totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
               isLight={currentTheme.isLight}
-              isLuckyDrawFoldOpen={isLuckyDrawFoldOpen}
-              onToggleLuckyDrawFold={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
             />
 
-            {/* Lucky Draw 10 Winners (Mega Real Gifts) - ONLY AT TOP in Folding Accordion */}
-            <LuckyDrawWinnersBlock
-              users={users}
-              onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
-              isLight={currentTheme.isLight}
-              isOpen={isLuckyDrawFoldOpen}
-              onToggle={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
-            />
+            {/* SECTION 1: Live Leaderboard (Podium, Rankings Table, Search & Stats) */}
+            {(activeSection === 'leaderboard' || activeSection === 'all') && (
+              <>
+                {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
+                {isAdmin && (
+                  <QuickUpgradeBar
+                    isAdmin={isAdmin}
+                    onOpenLogin={() => {}}
+                    onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+                    users={users}
+                    onUpgradeUser={handleUpgradeUser}
+                  />
+                )}
 
-            {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
-            {isAdmin && (
-              <QuickUpgradeBar
-                isAdmin={isAdmin}
-                onOpenLogin={() => {}}
-                onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
-                users={users}
-                onUpgradeUser={handleUpgradeUser}
-              />
+                {/* Top 3 Podium Highlights with 3D Medallions */}
+                {users.length >= 3 && (
+                  <LeaderboardPodium
+                    isAdmin={isAdmin}
+                    topThree={topThree}
+                    onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
+                    onSelectUser={(u) => {
+                      if (isAdmin) setEditingUser(u);
+                    }}
+                    isLight={currentTheme.isLight}
+                  />
+                )}
+
+                {/* Complete Live Leaderboard Table with Verified T-Shirt Eligibility */}
+                <LeaderboardTable
+                  isAdmin={isAdmin}
+                  users={users}
+                  onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
+                  onEditUser={(u) => {
+                    if (isAdmin) setEditingUser(u);
+                  }}
+                  isLight={currentTheme.isLight}
+                />
+
+                {/* Public User "Check My Live Rank" Search Card */}
+                <CheckRankCard users={users} />
+
+                {/* Live Metrics: Total User, Total Direct, Total Ticket */}
+                <StatsCards users={users} />
+              </>
             )}
 
-            {/* Top 3 Podium Highlights with Cash Badges - Front & Center */}
-            {users.length >= 3 && (
-              <LeaderboardPodium
-                isAdmin={isAdmin}
-                topThree={topThree}
-                onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
-                onSelectUser={(u) => {
-                  if (isAdmin) setEditingUser(u);
-                }}
-                isLight={currentTheme.isLight}
-              />
+            {/* SECTION 2: Top 10 Guaranteed Cash Rewards (Single dedicated 3D HD place) */}
+            {(activeSection === 'cash' || activeSection === 'all') && (
+              <Top10CashSection users={users} isLight={currentTheme.isLight} />
             )}
 
-            {/* Complete Live Leaderboard Table with Top 10 Cash status - Immediately Visible */}
-            <LeaderboardTable
-              isAdmin={isAdmin}
-              users={users}
-              onQuickAddDirect={(id, count) => handleQuickAddDirect(id, count || 1)}
-              onEditUser={(u) => {
-                if (isAdmin) setEditingUser(u);
-              }}
-              isLight={currentTheme.isLight}
-            />
-
-            {/* Public User "Check My Live Rank" Search Card */}
-            <CheckRankCard users={users} />
-
-            {/* Live Metrics: Total User, Total Direct, Total Ticket */}
-            <StatsCards users={users} />
+            {/* SECTION 3: 40 Lucky Draw Prizes & Ticket Qualified Members (Single dedicated 3D HD place) */}
+            {(activeSection === 'lucky_draw' || activeSection === 'all') && (
+              <LuckyDrawSection3D users={users} isLight={currentTheme.isLight} />
+            )}
 
             {/* Rules & Contest Notice */}
             <NoticeBanner />

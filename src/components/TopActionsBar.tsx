@@ -8,12 +8,15 @@ import {
   CheckCircle2,
   Users,
   Database,
+  Layers,
 } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 
+export type MainSectionTab = 'leaderboard' | 'cash' | 'lucky_draw' | 'all';
+
 interface TopActionsBarProps {
-  onOpenCashRewards: () => void;
-  onOpenGiftsModal: () => void;
+  activeSection: MainSectionTab;
+  onChangeSection: (section: MainSectionTab) => void;
   onManualRefresh: () => void;
   onOpenSupabaseModal?: () => void;
   isSyncing: boolean;
@@ -22,13 +25,11 @@ interface TopActionsBarProps {
   totalUsers: number;
   totalTickets: number;
   isLight?: boolean;
-  isLuckyDrawFoldOpen?: boolean;
-  onToggleLuckyDrawFold?: () => void;
 }
 
 export const TopActionsBar: React.FC<TopActionsBarProps> = ({
-  onOpenCashRewards,
-  onOpenGiftsModal,
+  activeSection,
+  onChangeSection,
   onManualRefresh,
   onOpenSupabaseModal,
   isSyncing,
@@ -37,72 +38,93 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
   totalUsers,
   totalTickets,
   isLight = true,
-  isLuckyDrawFoldOpen,
-  onToggleLuckyDrawFold,
 }) => {
   return (
     <div
-      className={`mb-6 rounded-2xl p-3 sm:p-4 transition-all duration-300 ${
+      className={`mb-6 rounded-3xl p-3 sm:p-4 transition-all duration-300 border-2 ${
         isLight
-          ? 'bg-white/95 border border-emerald-500/20 shadow-[0_8px_30px_rgba(5,150,105,0.06)]'
-          : 'bg-[#0c1220]/80 backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.4)]'
+          ? 'bg-white/95 border-emerald-500/30 shadow-[0_12px_35px_rgba(5,150,105,0.08)]'
+          : 'bg-[#0c1220]/90 backdrop-blur-xl border-white/[0.1] shadow-[0_12px_35px_rgba(0,0,0,0.5)]'
       }`}
     >
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Left: Two Prominent Buttons for Top 10 Cash & 40 Lucky Draw Gifts */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          {/* Button 1: Top 10 Cash Rewards (Rich Orange Block) */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
+        {/* Left: 3D HD Section Tabs (Simple, Clean, Non-Duplicating) */}
+        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-[#060a14] border border-slate-200 dark:border-white/10">
+          {/* Tab 1: Leaderboard */}
           <button
-            id="open-top10-cash-btn"
-            onClick={onOpenCashRewards}
-            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#c2410c] hover:from-[#c2410c] hover:to-[#ea580c] border border-orange-300/50 text-white font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md shadow-orange-600/20 active:scale-[0.98] cursor-pointer"
+            id="tab-btn-leaderboard"
+            onClick={() => onChangeSection('leaderboard')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer ${
+              activeSection === 'leaderboard'
+                ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md shadow-emerald-700/30 border border-emerald-400/40 scale-[1.02]'
+                : 'text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
+            }`}
           >
-            <div className="p-2 rounded-xl bg-black/25 text-yellow-300 group-hover:scale-110 transition-transform">
-              <Coins className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <span className="block text-[10px] uppercase font-black tracking-wider text-yellow-200 leading-none">
-                Guaranteed Cash
-              </span>
-              <span className="block text-xs sm:text-sm font-black tracking-tight leading-snug text-white">
-                💰 Top 10 Cash Rewards
-              </span>
-            </div>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-black/25 text-[10px] font-black uppercase text-yellow-300 ml-1 border border-white/20">
-              ₹4,000 Pool
+            <Trophy className={`w-4 h-4 ${activeSection === 'leaderboard' ? 'text-amber-300' : 'text-amber-500'}`} />
+            <span>Leaderboard</span>
+          </button>
+
+          {/* Tab 2: Top 10 Cash Rewards */}
+          <button
+            id="tab-btn-cash"
+            onClick={() => onChangeSection('cash')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer ${
+              activeSection === 'cash'
+                ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 shadow-md shadow-amber-600/30 border border-amber-300 scale-[1.02]'
+                : 'text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
+            }`}
+          >
+            <Coins className={`w-4 h-4 ${activeSection === 'cash' ? 'text-slate-950 fill-slate-950' : 'text-amber-500 fill-amber-500'}`} />
+            <span>10 Cash Rewards</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${
+              activeSection === 'cash' ? 'bg-slate-950 text-amber-300' : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+            }`}>
+              Guaranteed
             </span>
           </button>
 
-          {/* Button 2: Lucky Draw 10 Winners & 40 Gifts (Rich Orange Block with Folding Indicator) */}
+          {/* Tab 3: 40 Lucky Draw Gifts */}
           <button
-            id="open-40-gifts-btn"
-            onClick={onToggleLuckyDrawFold || onOpenGiftsModal}
-            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d97706] via-[#ea580c] to-[#f97316] hover:from-[#ea580c] hover:to-[#d97706] border border-orange-300/50 text-white font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md shadow-orange-600/20 active:scale-[0.98] cursor-pointer"
+            id="tab-btn-luckydraw"
+            onClick={() => onChangeSection('lucky_draw')}
+            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer ${
+              activeSection === 'lucky_draw'
+                ? 'bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#c2410c] text-white shadow-md shadow-orange-600/30 border border-orange-300/60 scale-[1.02]'
+                : 'text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/5'
+            }`}
           >
-            <div className="p-2 rounded-xl bg-black/25 text-yellow-300 group-hover:scale-110 transition-transform">
-              <Gift className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <span className="block text-[10px] uppercase font-black tracking-wider text-yellow-200 leading-none">
-                Mega Lucky Draw
-              </span>
-              <span className="block text-xs sm:text-sm font-black tracking-tight leading-snug text-white">
-                🎁 Lucky Draw 10 Winners
-              </span>
-            </div>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-black/30 text-[10px] font-black uppercase text-yellow-300 ml-1 border border-white/20">
-              {isLuckyDrawFoldOpen ? '▲ Fold' : '▼ Unfold'}
+            <Gift className={`w-4 h-4 ${activeSection === 'lucky_draw' ? 'text-yellow-200' : 'text-orange-500'}`} />
+            <span>40 Lucky Draw</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase ${
+              activeSection === 'lucky_draw' ? 'bg-black/30 text-yellow-200' : 'bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300'
+            }`}>
+              Prizes
             </span>
+          </button>
+
+          {/* Tab 4: All in One view */}
+          <button
+            id="tab-btn-all"
+            onClick={() => onChangeSection('all')}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer ${
+              activeSection === 'all'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+            title="View Leaderboard, Top 10 Cash, and 40 Lucky Draw all in one screen"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>All In One</span>
           </button>
         </div>
 
         {/* Right: Live Cloud Sync Status across all devices + Supabase + Manual Refresh */}
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-white/[0.08] flex-wrap">
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200 dark:border-white/[0.08] flex-wrap">
           {onOpenSupabaseModal && (
             <button
               id="open-supabase-modal-btn"
               onClick={onOpenSupabaseModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-200 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-200 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm"
               title="Supabase PostgreSQL & Realtime details"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
@@ -112,7 +134,7 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
           )}
 
           <div
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs shadow-inner ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs shadow-inner ${
               isLight ? 'bg-slate-100 border border-slate-300' : 'bg-[#090e1a]/90 border border-white/[0.08]'
             }`}
           >
@@ -123,11 +145,11 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
             <span className={`font-black text-[11px] ${isLight ? 'text-slate-950' : 'text-slate-200'}`}>
               {isLiveConnected ? (
                 <>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-black">Realtime Live</span> • All Devices
+                  <span className="text-emerald-700 dark:text-emerald-400 font-black">Realtime Live</span>
                 </>
               ) : (
                 <>
-                  <span className="text-amber-700 dark:text-amber-400 font-black">Connecting</span> • Cloud DB
+                  <span className="text-amber-700 dark:text-amber-400 font-black">Connecting</span>
                 </>
               )}
             </span>
