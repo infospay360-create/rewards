@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Smartphone,
   ShoppingCart,
-  Plane,
   FileText,
   LayoutGrid,
   TrendingUp,
@@ -10,6 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ThemeSettings } from '../types';
+import { SmartPayLogo } from './SmartPayLogo';
 
 interface SmartPayPosterHeaderProps {
   currentTheme: ThemeSettings;
@@ -26,31 +26,8 @@ export const SmartPayPosterHeader: React.FC<SmartPayPosterHeaderProps> = ({ curr
 
       {/* Top Banner Row */}
       <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-4 pb-4 border-b border-emerald-500/15">
-        {/* Left: SmartPay 360 Official Logo & Motto */}
-        <div className="flex items-center gap-3.5">
-          {/* Hexagonal 3D S Badge */}
-          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#0284c7] via-[#0369a1] to-[#1e3a8a] shadow-lg shadow-sky-600/25 flex items-center justify-center p-2.5 border-2 border-sky-300/50">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-white fill-current">
-              <path d="M50 5 L88 27 L88 73 L50 95 L12 73 L12 27 Z" fill="none" stroke="currentColor" strokeWidth="9" strokeLinejoin="round" />
-              <path d="M36 36 C36 30 64 26 64 36 C64 45 36 45 36 56 C36 67 64 64 64 58" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#0f2942]">SmartPay</span>
-              <span className="text-2xl sm:text-3xl font-black tracking-tight text-[#0284c7]">360</span>
-            </div>
-            <div className="text-[10px] sm:text-xs font-bold tracking-widest text-[#047857] uppercase mt-0.5 flex items-center gap-1.5">
-              <span>PAY</span>
-              <span>•</span>
-              <span>SHOP</span>
-              <span>•</span>
-              <span>EARN</span>
-              <span>•</span>
-              <span>GROW</span>
-            </div>
-          </div>
-        </div>
+        {/* Left: SmartPay 360 Official 3D Isometric Logo & Motto */}
+        <SmartPayLogo size="lg" isLight={isLight} showSubtitle={true} />
 
         {/* Center: "Together We Grow" Script Calligraphy */}
         <div className="text-center px-4">
@@ -80,25 +57,21 @@ export const SmartPayPosterHeader: React.FC<SmartPayPosterHeaderProps> = ({ curr
 
           {/* 5 Quick Action Service Tiles */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-600 hover:bg-sky-500/20 transition-all cursor-default">
+            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-950 hover:bg-sky-500/25 transition-all cursor-default shadow-xs">
               <Smartphone className="w-4 h-4 text-[#0284c7]" />
-              <span className="text-[9px] font-bold mt-0.5">Recharge</span>
+              <span className="text-[9px] font-black text-slate-950 mt-0.5">Recharge</span>
             </div>
-            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 hover:bg-orange-500/20 transition-all cursor-default">
+            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-950 hover:bg-orange-500/25 transition-all cursor-default shadow-xs">
               <ShoppingCart className="w-4 h-4 text-[#ea580c]" />
-              <span className="text-[9px] font-bold mt-0.5">Shopping</span>
+              <span className="text-[9px] font-black text-slate-950 mt-0.5">Shopping</span>
             </div>
-            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 hover:bg-blue-500/20 transition-all cursor-default">
-              <Plane className="w-4 h-4 text-[#0284c7]" />
-              <span className="text-[9px] font-bold mt-0.5">Travel</span>
-            </div>
-            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 hover:bg-amber-500/20 transition-all cursor-default">
+            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-950 hover:bg-amber-500/25 transition-all cursor-default shadow-xs">
               <FileText className="w-4 h-4 text-[#d97706]" />
-              <span className="text-[9px] font-bold mt-0.5 whitespace-nowrap">Bill Payment</span>
+              <span className="text-[9px] font-black text-slate-950 mt-0.5 whitespace-nowrap">Bill Payment</span>
             </div>
-            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-700 hover:bg-slate-500/20 transition-all cursor-default">
-              <LayoutGrid className="w-4 h-4 text-slate-700" />
-              <span className="text-[9px] font-bold mt-0.5">More</span>
+            <div className="flex flex-col items-center p-1.5 px-2.5 rounded-xl bg-slate-500/15 border border-slate-500/30 text-slate-950 hover:bg-slate-500/25 transition-all cursor-default shadow-xs">
+              <LayoutGrid className="w-4 h-4 text-slate-900" />
+              <span className="text-[9px] font-black text-slate-950 mt-0.5">More</span>
             </div>
           </div>
         </div>
@@ -111,16 +84,16 @@ export const SmartPayPosterHeader: React.FC<SmartPayPosterHeaderProps> = ({ curr
             <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
             <span>Rank #1 to #3 Cash Position</span>
           </span>
-          <span className="text-xs font-bold text-emerald-800 hidden sm:inline-block">
+          <span className="text-xs font-black text-emerald-950 hidden sm:inline-block">
             Win More • Inspire More • 5 Directs = 1 Lucky Ticket
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold">
-          <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+        <div className="flex items-center gap-2 text-xs font-black">
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-400">
             💰 Top 10 Cash Guaranteed
           </span>
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-950 border border-emerald-400">
             🎁 40 Lucky Draw Gifts
           </span>
         </div>

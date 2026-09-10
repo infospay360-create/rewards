@@ -22,6 +22,8 @@ interface TopActionsBarProps {
   totalUsers: number;
   totalTickets: number;
   isLight?: boolean;
+  isLuckyDrawFoldOpen?: boolean;
+  onToggleLuckyDrawFold?: () => void;
 }
 
 export const TopActionsBar: React.FC<TopActionsBarProps> = ({
@@ -35,6 +37,8 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
   totalUsers,
   totalTickets,
   isLight = true,
+  isLuckyDrawFoldOpen,
+  onToggleLuckyDrawFold,
 }) => {
   return (
     <div
@@ -47,47 +51,47 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Left: Two Prominent Buttons for Top 10 Cash & 40 Lucky Draw Gifts */}
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          {/* Button 1: Top 10 Cash Rewards */}
+          {/* Button 1: Top 10 Cash Rewards (Rich Orange Block) */}
           <button
             id="open-top10-cash-btn"
             onClick={onOpenCashRewards}
-            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 hover:from-amber-500 hover:via-amber-400 hover:to-orange-500 border border-amber-500/30 hover:border-amber-300 text-amber-300 hover:text-slate-950 font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md hover:shadow-amber-500/25 active:scale-[0.98] cursor-pointer"
+            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#c2410c] hover:from-[#c2410c] hover:to-[#ea580c] border border-orange-300/50 text-white font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md shadow-orange-600/20 active:scale-[0.98] cursor-pointer"
           >
-            <div className="p-2 rounded-xl bg-amber-500/20 group-hover:bg-slate-950/20 text-amber-300 group-hover:text-slate-950 transition-colors">
+            <div className="p-2 rounded-xl bg-black/25 text-yellow-300 group-hover:scale-110 transition-transform">
               <Coins className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <span className="block text-[10px] uppercase font-black tracking-wider text-amber-400/90 group-hover:text-slate-950/80 leading-none">
+              <span className="block text-[10px] uppercase font-black tracking-wider text-yellow-200 leading-none">
                 Guaranteed Cash
               </span>
-              <span className="block text-xs sm:text-sm font-black tracking-tight leading-snug text-white group-hover:text-slate-950">
+              <span className="block text-xs sm:text-sm font-black tracking-tight leading-snug text-white">
                 💰 Top 10 Cash Rewards
               </span>
             </div>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/20 group-hover:bg-slate-950/20 text-[10px] font-black uppercase text-amber-300 group-hover:text-slate-950 ml-1 border border-amber-500/30 group-hover:border-transparent">
-              Prize Pool
+            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-black/25 text-[10px] font-black uppercase text-yellow-300 ml-1 border border-white/20">
+              ₹4,000 Pool
             </span>
           </button>
 
-          {/* Button 2: 40 Lucky Draw Gifts */}
+          {/* Button 2: Lucky Draw 10 Winners & 40 Gifts (Rich Orange Block with Folding Indicator) */}
           <button
             id="open-40-gifts-btn"
-            onClick={onOpenGiftsModal}
-            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/15 via-pink-500/10 to-rose-500/15 hover:from-purple-500 hover:via-pink-500 hover:to-rose-500 border border-purple-500/30 hover:border-pink-300 text-pink-300 hover:text-white font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md hover:shadow-purple-500/25 active:scale-[0.98] cursor-pointer"
+            onClick={onToggleLuckyDrawFold || onOpenGiftsModal}
+            className="group flex-1 sm:flex-none flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d97706] via-[#ea580c] to-[#f97316] hover:from-[#ea580c] hover:to-[#d97706] border border-orange-300/50 text-white font-extrabold text-xs sm:text-sm transition-all duration-300 shadow-md shadow-orange-600/20 active:scale-[0.98] cursor-pointer"
           >
-            <div className="p-2 rounded-xl bg-purple-500/20 group-hover:bg-white/20 text-pink-300 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-xl bg-black/25 text-yellow-300 group-hover:scale-110 transition-transform">
               <Gift className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <span className="block text-[10px] uppercase font-black tracking-wider text-pink-400/90 group-hover:text-white/80 leading-none">
-                Mega Draw
+              <span className="block text-[10px] uppercase font-black tracking-wider text-yellow-200 leading-none">
+                Mega Lucky Draw
               </span>
               <span className="block text-xs sm:text-sm font-black tracking-tight leading-snug text-white">
-                🎁 40 Lucky Draw Gifts
+                🎁 Lucky Draw 10 Winners
               </span>
             </div>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-purple-500/20 group-hover:bg-white/20 text-[10px] font-black uppercase text-pink-200 group-hover:text-white ml-1 border border-purple-500/30 group-hover:border-transparent">
-              40 Prizes
+            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-lg bg-black/30 text-[10px] font-black uppercase text-yellow-300 ml-1 border border-white/20">
+              {isLuckyDrawFoldOpen ? '▲ Fold' : '▼ Unfold'}
             </span>
           </button>
         </div>
@@ -98,7 +102,7 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
             <button
               id="open-supabase-modal-btn"
               onClick={onOpenSupabaseModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-200 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-sm"
               title="Supabase PostgreSQL & Realtime details"
             >
               <Database className="w-3.5 h-3.5 text-emerald-400" />
@@ -109,21 +113,21 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
 
           <div
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs shadow-inner ${
-              isLight ? 'bg-slate-100 border border-slate-200' : 'bg-[#090e1a]/90 border border-white/[0.08]'
+              isLight ? 'bg-slate-100 border border-slate-300' : 'bg-[#090e1a]/90 border border-white/[0.08]'
             }`}
           >
             <span className="relative flex h-2 w-2">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isLiveConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
               <span className={`relative inline-flex rounded-full h-2 w-2 ${isLiveConnected ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
             </span>
-            <span className={`font-semibold text-[11px] ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+            <span className={`font-black text-[11px] ${isLight ? 'text-slate-950' : 'text-slate-200'}`}>
               {isLiveConnected ? (
                 <>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Realtime Live</span> • All Devices
+                  <span className="text-emerald-700 dark:text-emerald-400 font-black">Realtime Live</span> • All Devices
                 </>
               ) : (
                 <>
-                  <span className="text-amber-600 dark:text-amber-400 font-bold">Connecting</span> • Cloud DB
+                  <span className="text-amber-700 dark:text-amber-400 font-black">Connecting</span> • Cloud DB
                 </>
               )}
             </span>
@@ -133,14 +137,14 @@ export const TopActionsBar: React.FC<TopActionsBarProps> = ({
             id="manual-refresh-sync-btn"
             onClick={onManualRefresh}
             disabled={isSyncing}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl active:scale-95 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-sm ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl active:scale-95 text-xs font-black transition-all disabled:opacity-50 cursor-pointer shadow-sm ${
               isLight
-                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
-                : 'bg-[#141d30] hover:bg-[#1a2640] text-slate-200 border border-white/[0.08]'
+                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400'
+                : 'bg-[#141d30] hover:bg-[#1a2640] text-slate-100 border border-white/[0.1]'
             }`}
             title="Fetch latest rankings from Supabase database"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-amber-500 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Refresh'}</span>
           </button>
         </div>

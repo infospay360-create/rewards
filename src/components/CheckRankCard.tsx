@@ -53,7 +53,7 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
               Check My Live Rank & Lucky Draw Prize
             </h3>
           </div>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-slate-200 font-bold">
             Enter your User ID to check your live rank, total tickets, and reward eligibility in real time!
           </p>
         </div>
@@ -66,7 +66,7 @@ export const CheckRankCard: React.FC<CheckRankCardProps> = ({ users }) => {
             placeholder="Enter User ID (e.g. SPAY411819)..."
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-[#080d19]/90 border border-white/[0.1] rounded-xl text-xs sm:text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition shadow-inner"
+            className="flex-1 px-4 py-2.5 bg-[#080d19]/90 border border-white/[0.15] rounded-xl text-xs sm:text-sm font-mono font-bold text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 transition shadow-inner"
           />
           <button
             type="submit"

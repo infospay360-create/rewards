@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, Gift, Rocket, Sparkles } from 'lucide-react';
 import { ThemeSettings } from '../types';
+import { SmartPayLogo } from './SmartPayLogo';
 
 interface SmartPayPosterFooterProps {
   currentTheme: ThemeSettings;
@@ -81,18 +82,7 @@ export const SmartPayPosterFooter: React.FC<SmartPayPosterFooterProps> = ({ curr
 
         {/* Right: SmartPay 360 Official Brand Watermark */}
         <div className="hidden lg:flex flex-col items-end shrink-0 pl-4 border-l border-white/20">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-sky-600 font-black shadow-md">
-              S
-            </div>
-            <div>
-              <span className="text-lg font-black text-white tracking-tight">SmartPay</span>
-              <span className="text-lg font-black text-sky-300"> 360</span>
-            </div>
-          </div>
-          <span className="text-[9px] font-bold tracking-widest text-emerald-200 uppercase mt-0.5">
-            PAY • SHOP • EARN • GROW
-          </span>
+          <SmartPayLogo size="md" isLight={false} showSubtitle={true} />
         </div>
       </div>
     </div>

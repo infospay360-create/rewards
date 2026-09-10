@@ -45,6 +45,7 @@ import { AdminPortal } from './components/AdminPortal';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import { SmartPayPosterHeader } from './components/SmartPayPosterHeader';
 import { SmartPayPosterFooter } from './components/SmartPayPosterFooter';
+import { LuckyDrawWinnersBlock } from './components/LuckyDrawWinnersBlock';
 import {
   fetchUsersFromSupabase,
   upsertUserInSupabase,
@@ -94,6 +95,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [isSupabaseLive, setIsSupabaseLive] = useState(false);
+  const [isLuckyDrawFoldOpen, setIsLuckyDrawFoldOpen] = useState(false);
   const currentVersionRef = useRef<number>(0);
   const currentThemeVersionRef = useRef<number>(0);
 
@@ -762,7 +764,7 @@ export default function App() {
             {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
             <TopActionsBar
               onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
-              onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
+              onOpenGiftsModal={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
               onManualRefresh={handleManualRefresh}
               onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
               isSyncing={isSyncing}
@@ -771,6 +773,17 @@ export default function App() {
               totalUsers={users.length}
               totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
               isLight={currentTheme.isLight}
+              isLuckyDrawFoldOpen={isLuckyDrawFoldOpen}
+              onToggleLuckyDrawFold={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
+            />
+
+            {/* Lucky Draw 10 Winners (Mega Real Gifts) - ONLY AT TOP in Folding Accordion */}
+            <LuckyDrawWinnersBlock
+              users={users}
+              onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
+              isLight={currentTheme.isLight}
+              isOpen={isLuckyDrawFoldOpen}
+              onToggle={() => setIsLuckyDrawFoldOpen((prev) => !prev)}
             />
 
             {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}

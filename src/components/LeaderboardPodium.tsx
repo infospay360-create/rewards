@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Plus, Minus, Coins, Shirt } from 'lucide-react';
+import { Trophy, Plus, Minus, Coins, Shirt, Crown, Sparkles } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 import { calculateProgressToNextTicket, getCashPrizeForRank } from '../utils/leaderboardUtils';
 
@@ -44,10 +44,10 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
             shadow: 'shadow-[0_16px_45px_rgba(4,120,87,0.35)]',
             ribbonBg: 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black',
             ribbonText: '1st CHAMPION',
-            userIdColor: 'text-white',
-            userNameColor: 'text-emerald-100',
-            statBoxBg: 'bg-white text-slate-900 border border-emerald-500/20 shadow-sm',
-            statBoxLabel: 'text-slate-500',
+            userIdColor: 'text-white font-black',
+            userNameColor: 'text-emerald-100 font-black',
+            statBoxBg: 'bg-white text-slate-950 border border-emerald-500/30 shadow-sm',
+            statBoxLabel: 'text-slate-800 font-bold',
             bottomBannerBg: 'bg-[#047857] text-amber-300 border border-amber-400/40',
             bottomBannerText: 'CHAMPION LEADS THE WAY',
             accentRing: 'ring-2 ring-amber-400/50',
@@ -58,10 +58,10 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
             shadow: 'shadow-[0_12px_35px_rgba(2,132,199,0.15)]',
             ribbonBg: 'bg-gradient-to-r from-[#0284c7] via-[#0369a1] to-[#1e3a8a] text-white font-black',
             ribbonText: '2ND RUNNER-UP',
-            userIdColor: 'text-[#0f2942]',
-            userNameColor: 'text-slate-600',
-            statBoxBg: 'bg-slate-50 text-slate-900 border border-slate-200 shadow-sm',
-            statBoxLabel: 'text-slate-500',
+            userIdColor: 'text-slate-950 font-black',
+            userNameColor: 'text-slate-900 font-black',
+            statBoxBg: 'bg-slate-50 text-slate-950 border border-slate-300 shadow-sm',
+            statBoxLabel: 'text-slate-800 font-bold',
             bottomBannerBg: 'bg-gradient-to-r from-[#0284c7] to-[#0369a1] text-white',
             bottomBannerText: 'KEEP GOING',
             accentRing: 'ring-1 ring-sky-300',
@@ -72,10 +72,10 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
             shadow: 'shadow-[0_12px_35px_rgba(249,115,22,0.15)]',
             ribbonBg: 'bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#fb923c] text-white font-black',
             ribbonText: '3RD PLACE',
-            userIdColor: 'text-[#0f2942]',
-            userNameColor: 'text-slate-600',
-            statBoxBg: 'bg-slate-50 text-slate-900 border border-slate-200 shadow-sm',
-            statBoxLabel: 'text-slate-500',
+            userIdColor: 'text-slate-950 font-black',
+            userNameColor: 'text-slate-900 font-black',
+            statBoxBg: 'bg-slate-50 text-slate-950 border border-slate-300 shadow-sm',
+            statBoxLabel: 'text-slate-800 font-bold',
             bottomBannerBg: 'bg-gradient-to-r from-[#ea580c] to-[#f97316] text-white',
             bottomBannerText: 'YOU ARE AMAZING',
             accentRing: 'ring-1 ring-orange-300',
@@ -127,15 +127,47 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
         }[rank as 1 | 2 | 3]!;
 
     return (
-      <div className="flex flex-col items-center flex-1 max-w-[320px]">
+      <div className="flex flex-col items-center flex-1 max-w-[320px] relative">
+        {/* Top Trophy Graphic Icon (Exact Poster 3D Trophy with Rank Numeral) */}
+        <div className="relative z-10 -mb-5 flex flex-col items-center">
+          {rank === 1 ? (
+            <div className="relative flex items-center justify-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-300 p-2 shadow-[0_10px_25px_rgba(245,158,11,0.45)] border-2 border-yellow-200 flex flex-col items-center justify-center transform hover:rotate-3 transition duration-300">
+                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-slate-950 fill-amber-300" />
+                <span className="text-[11px] font-black text-slate-950 -mt-1">#1</span>
+              </div>
+              <span className="absolute -top-1 -right-2 text-xl animate-bounce">👑</span>
+            </div>
+          ) : rank === 2 ? (
+            <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-slate-200 via-slate-100 to-slate-300 p-2 shadow-[0_8px_20px_rgba(148,163,184,0.35)] border-2 border-slate-200 flex flex-col items-center justify-center">
+              <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-slate-800 fill-slate-300" />
+              <span className="text-[10px] font-black text-slate-900 -mt-1">#2</span>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-amber-700 via-orange-600 to-amber-500 p-2 shadow-[0_8px_20px_rgba(234,88,12,0.35)] border-2 border-orange-300 flex flex-col items-center justify-center text-white">
+                <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-orange-300" />
+                <span className="text-[10px] font-black text-white -mt-1">#3</span>
+              </div>
+              {/* Poster Badge: "Small Steps Big Rewards" */}
+              <div
+                className="absolute -top-6 -right-12 hidden sm:flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-md whitespace-nowrap border border-emerald-400 rotate-6"
+                style={{ fontFamily: "'Brush Script MT', 'Dancing Script', cursive, sans-serif" }}
+              >
+                <span>Small Steps Big Rewards</span>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* User Card */}
         <div
           onClick={() => onSelectUser(user)}
-          className={`w-full relative rounded-3xl ${rankStyles.cardBg} ${rankStyles.border} ${rankStyles.shadow} ${rankStyles.accentRing} p-4 sm:p-5 text-center cursor-pointer hover:scale-[1.02] transition-all duration-300 backdrop-blur-xl group`}
+          className={`w-full relative rounded-3xl ${rankStyles.cardBg} ${rankStyles.border} ${rankStyles.shadow} ${rankStyles.accentRing} pt-7 pb-5 px-4 sm:px-5 text-center cursor-pointer hover:scale-[1.02] transition-all duration-300 backdrop-blur-xl group`}
         >
           {/* Floating Arch Ribbon Banner on Top (Exact Poster Style) */}
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full shadow-lg text-xs font-black tracking-wider uppercase whitespace-nowrap z-10 border border-white/30 drop-shadow-md">
-            <span className={`${rankStyles.ribbonBg} px-3 py-1 rounded-full flex items-center gap-1.5`}>
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 px-3 py-1 rounded-full shadow-md text-xs font-black tracking-wider uppercase whitespace-nowrap z-10 border border-white/30">
+            <span className={`${rankStyles.ribbonBg} px-3 py-0.5 rounded-full flex items-center gap-1.5`}>
               <span>{medal}</span>
               <span>{rankStyles.ribbonText}</span>
             </span>
@@ -185,18 +217,18 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
           </div>
 
           {/* Next Ticket progress */}
-          <div className={`space-y-1.5 text-left p-2.5 rounded-2xl ${isLight ? (rank === 1 ? 'bg-black/20 text-white' : 'bg-slate-50 text-slate-700 border border-slate-200') : 'bg-[#080d19]/60 text-slate-300'}`}>
+          <div className={`space-y-1.5 text-left p-2.5 rounded-2xl ${isLight ? (rank === 1 ? 'bg-black/25 text-white' : 'bg-slate-100 text-slate-950 border border-slate-300') : 'bg-[#080d19]/80 text-white'}`}>
             <div className="flex justify-between text-[10px]">
-              <span className="font-semibold">Next Ticket Goal</span>
-              <span className="font-bold text-amber-500 font-mono">{currentInCycle}/5</span>
+              <span className="font-extrabold text-slate-950 dark:text-white">Next Ticket Goal</span>
+              <span className="font-black text-amber-500 font-mono">{currentInCycle}/5</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-950 overflow-hidden p-0.5">
+            <div className="w-full h-2 rounded-full bg-slate-300 dark:bg-slate-950 overflow-hidden p-0.5">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 transition-all duration-300 shadow-sm"
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <div className="text-[10px] text-center font-semibold opacity-90">
+            <div className="text-[10px] text-center font-black text-slate-950 dark:text-slate-200">
               {needed === 0 ? '🎉 Ticket unlocked!' : `${needed} direct needed for next ticket`}
             </div>
           </div>
@@ -256,14 +288,52 @@ export const LeaderboardPodium: React.FC<LeaderboardPodiumProps> = ({
 
   return (
     <div className="mb-10">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <Trophy className="w-6 h-6 text-amber-500 fill-amber-400" />
-          <span>Top Position Leaders (Cash Winners)</span>
-        </h3>
-        <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-sm border border-emerald-500/30">
-          Rank #1 to #3 Cash Positions
-        </span>
+      {/* Top Position Leaders (Cash Winners) - Dedicated Orange Block */}
+      <div className="mb-6 rounded-2xl sm:rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-[#ea580c] via-[#f97316] to-[#c2410c] text-white shadow-xl shadow-orange-600/25 border-2 border-orange-300/40 relative overflow-hidden">
+        {/* Subtle glow background */}
+        <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/15 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-amber-400/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-amber-200 border border-white/30 shadow-inner shrink-0">
+              <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-300 fill-yellow-400 drop-shadow-md" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                <h3 className="text-lg sm:text-2xl font-black tracking-tight text-white drop-shadow-sm uppercase flex items-center gap-2">
+                  <span>Top Position Leaders (Cash Winners)</span>
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-yellow-300 text-[11px] font-black tracking-wider uppercase border border-yellow-400/40 inline-flex items-center gap-1">
+                  <Crown className="w-3 h-3 text-yellow-300" />
+                  <span>Rank #1 to #3 Podium</span>
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-bold text-orange-100 mt-1 flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                <span>Top 3 Champions on Podium</span>
+                <span>•</span>
+                <span>Guaranteed Cash Prize Pool</span>
+                <span>•</span>
+                <span className="text-yellow-200 font-extrabold">Win More, Inspire More</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap justify-center">
+            <div className="px-3.5 py-1.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm">
+              <span className="block text-[10px] font-extrabold uppercase tracking-wider text-orange-200">1st Prize</span>
+              <span className="text-xs sm:text-sm font-black text-yellow-300 font-mono">₹4,000 CASH</span>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm">
+              <span className="block text-[10px] font-extrabold uppercase tracking-wider text-orange-200">2nd Prize</span>
+              <span className="text-xs sm:text-sm font-black text-slate-100 font-mono">₹2,000 CASH</span>
+            </div>
+            <div className="px-3.5 py-1.5 rounded-xl bg-black/25 backdrop-blur-md border border-white/20 text-center shadow-sm">
+              <span className="block text-[10px] font-extrabold uppercase tracking-wider text-orange-200">3rd Prize</span>
+              <span className="text-xs sm:text-sm font-black text-amber-200 font-mono">₹1,000 CASH</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-end justify-center gap-2 sm:gap-4 pt-4">

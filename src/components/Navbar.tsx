@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, Flame, Share2, RotateCcw, Calendar, Ticket, PlusCircle, ShieldCheck, Lock, LogOut } from 'lucide-react';
+import { SmartPayLogo } from './SmartPayLogo';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -42,38 +43,22 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Brand & Logo */}
+          {/* Brand & Logo (Exact poster 3D hexagon logo) */}
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onNavigateToLeaderboard}
-              className="flex items-center gap-3.5 text-left group cursor-pointer focus:outline-none"
+              className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none"
             >
-              <div className="relative flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.25)] text-slate-950 font-black text-xl group-hover:scale-105 transition-all duration-300 border border-amber-300/40">
-                <Trophy className="w-5 h-5 md:w-6 md:h-6 text-slate-950" />
-                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-sm"></span>
+              <SmartPayLogo size="md" isLight={isLight} showSubtitle={true} />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500/15 to-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 shadow-sm uppercase tracking-wider">
+                <Flame className="w-3 h-3 fill-orange-500 text-orange-500 animate-pulse" /> Live
+              </span>
+              {isAdmin && (
+                <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Admin
                 </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className={`text-lg md:text-xl font-black tracking-tight flex items-center gap-2 ${isLight ? 'text-[#0f2942]' : 'text-white'}`}>
-                    <span>SMARTPAY360</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500/20 to-orange-500/20 text-orange-500 dark:text-orange-400 border border-orange-500/30 shadow-sm uppercase tracking-wider">
-                      <Flame className="w-3 h-3 fill-orange-400 text-orange-500" /> Live
-                    </span>
-                  </h1>
-                  {isAdmin && (
-                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Admin Session
-                    </span>
-                  )}
-                </div>
-                <p className={`text-[11px] font-semibold tracking-wide hidden sm:block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                  TOP 10 CASH PRIZES • 👥 5 DIRECT = 🎟️ 1 TICKET • MEGA LUCKY DRAW
-                </p>
-              </div>
+              )}
             </button>
           </div>
 
