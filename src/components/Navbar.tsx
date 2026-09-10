@@ -14,6 +14,7 @@ interface NavbarProps {
   onOpenGiftsModal?: () => void;
   totalUsers: number;
   totalTickets: number;
+  isLight?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,9 +30,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGiftsModal,
   totalUsers,
   totalTickets,
+  isLight = true,
 }) => {
   return (
-    <header className="sticky top-0 z-30 bg-[#080d19]/85 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <header
+      className={`sticky top-0 z-30 transition-colors duration-300 ${
+        isLight
+          ? 'bg-white/95 backdrop-blur-xl border-b border-emerald-500/20 shadow-[0_4px_24px_rgba(5,150,105,0.06)] text-slate-900'
+          : 'bg-[#080d19]/85 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.4)] text-white'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Brand & Logo */}
@@ -50,21 +58,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg md:text-xl font-black tracking-tight text-white flex items-center gap-2">
-                    <span className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                      SMARTPAY360
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500/20 to-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm uppercase tracking-wider">
-                      <Flame className="w-3 h-3 fill-orange-400" /> Live
+                  <h1 className={`text-lg md:text-xl font-black tracking-tight flex items-center gap-2 ${isLight ? 'text-[#0f2942]' : 'text-white'}`}>
+                    <span>SMARTPAY360</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500/20 to-orange-500/20 text-orange-500 dark:text-orange-400 border border-orange-500/30 shadow-sm uppercase tracking-wider">
+                      <Flame className="w-3 h-3 fill-orange-400 text-orange-500" /> Live
                     </span>
                   </h1>
                   {isAdmin && (
-                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> Admin Session
+                    <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Admin Session
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 font-semibold tracking-wide hidden sm:block">
+                <p className={`text-[11px] font-semibold tracking-wide hidden sm:block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   TOP 10 CASH PRIZES • 👥 5 DIRECT = 🎟️ 1 TICKET • MEGA LUCKY DRAW
                 </p>
               </div>

@@ -43,6 +43,8 @@ import { UserEditModal } from './components/UserEditModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPortal } from './components/AdminPortal';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal';
+import { SmartPayPosterHeader } from './components/SmartPayPosterHeader';
+import { SmartPayPosterFooter } from './components/SmartPayPosterFooter';
 import {
   fetchUsersFromSupabase,
   upsertUserInSupabase,
@@ -728,6 +730,7 @@ export default function App() {
         onOpenGiftsModal={() => setRewardsModalState({ isOpen: true, initialTab: 'gifts' })}
         totalUsers={users.length}
         totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
+        isLight={currentTheme.isLight}
       />
 
       {/* Main Container */}
@@ -753,6 +756,9 @@ export default function App() {
           />
         ) : (
           <>
+            {/* SmartPay 360 Official Poster Branding Header Banner */}
+            <SmartPayPosterHeader currentTheme={currentTheme} />
+
             {/* Top Actions & Rewards Bar (Buttons for Top 10 Cash and 40 Lucky Draw Gifts + Live Sync Status) */}
             <TopActionsBar
               onOpenCashRewards={() => setRewardsModalState({ isOpen: true, initialTab: 'cash' })}
@@ -764,6 +770,7 @@ export default function App() {
               isSupabaseLive={isSupabaseLive}
               totalUsers={users.length}
               totalTickets={users.reduce((s, u) => s + u.ticketCount, 0)}
+              isLight={currentTheme.isLight}
             />
 
             {/* Fast User ID & Direct Upgrade System (Admin Only - Appears upon Login) */}
@@ -786,6 +793,7 @@ export default function App() {
                 onSelectUser={(u) => {
                   if (isAdmin) setEditingUser(u);
                 }}
+                isLight={currentTheme.isLight}
               />
             )}
 
@@ -797,6 +805,7 @@ export default function App() {
               onEditUser={(u) => {
                 if (isAdmin) setEditingUser(u);
               }}
+              isLight={currentTheme.isLight}
             />
 
             {/* Public User "Check My Live Rank" Search Card */}
@@ -807,6 +816,9 @@ export default function App() {
 
             {/* Rules & Contest Notice */}
             <NoticeBanner />
+
+            {/* Official SmartPay Poster Footer with Motivational Callout & Pillars */}
+            <SmartPayPosterFooter currentTheme={currentTheme} />
           </>
         )}
       </main>

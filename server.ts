@@ -193,13 +193,14 @@ function persistStore(): void {
 const THEME_FILE = path.join(DATA_DIR, 'theme-store.json');
 let themeVersion = Date.now();
 let cachedTheme: any = {
-  presetId: 'midnight_gold',
-  name: 'Midnight Obsidian & Gold',
-  bgBaseColor: '#07090e',
-  glowColor1: 'rgba(245, 158, 11, 0.12)',
-  glowColor2: 'rgba(37, 99, 235, 0.06)',
+  presetId: 'smartpay_official',
+  name: 'SmartPay 360 Official (Poster Theme)',
+  bgBaseColor: '#eefbf4',
+  glowColor1: 'rgba(5, 150, 105, 0.25)',
+  glowColor2: 'rgba(245, 158, 11, 0.20)',
   patternStyle: 'dots',
   glowIntensity: 'vibrant',
+  isLight: true,
   updatedAt: new Date().toISOString(),
 };
 
@@ -215,6 +216,8 @@ function initThemeStore(): void {
         return;
       }
     }
+    // If not exists, persist the new SmartPay 360 Official theme
+    persistThemeStore();
   } catch (err) {
     console.warn('[ThemeStore] Could not load theme file:', err);
   }

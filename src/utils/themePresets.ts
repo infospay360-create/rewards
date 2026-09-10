@@ -4,13 +4,14 @@ export const THEME_STORAGE_KEY = 'smartpay360_theme_settings_v1';
 export const THEME_BROADCAST_CHANNEL = 'smartpay360_theme_broadcast_v1';
 
 export const DEFAULT_THEME: ThemeSettings = {
-  presetId: 'midnight_gold',
-  name: 'Midnight Obsidian & Gold',
-  bgBaseColor: '#07090e',
-  glowColor1: 'rgba(245, 158, 11, 0.12)', // Top Amber Gold
-  glowColor2: 'rgba(37, 99, 235, 0.06)', // Side Sapphire
+  presetId: 'smartpay_official',
+  name: 'SmartPay 360 Official (Poster Theme)',
+  bgBaseColor: '#eefbf4',
+  glowColor1: 'rgba(5, 150, 105, 0.25)', // Lush Emerald
+  glowColor2: 'rgba(245, 158, 11, 0.20)', // Royal Gold
   patternStyle: 'dots',
   glowIntensity: 'vibrant',
+  isLight: true,
   updatedAt: new Date().toISOString(),
 };
 
@@ -26,10 +27,46 @@ export interface ThemePresetOption {
 
 export const THEME_PRESETS: ThemePresetOption[] = [
   {
+    id: 'smartpay_official',
+    name: 'SmartPay 360 Official',
+    subtitle: 'Emerald Green & 24k Gold Mint Theme (Exact Poster)',
+    badge: 'Official Poster ⭐',
+    previewBg: '#eefbf4',
+    previewAccent: '#059669',
+    config: {
+      presetId: 'smartpay_official',
+      name: 'SmartPay 360 Official (Poster Theme)',
+      bgBaseColor: '#eefbf4',
+      glowColor1: 'rgba(5, 150, 105, 0.25)',
+      glowColor2: 'rgba(245, 158, 11, 0.20)',
+      patternStyle: 'dots',
+      glowIntensity: 'vibrant',
+      isLight: true,
+    },
+  },
+  {
+    id: 'smartpay_dark_emerald',
+    name: 'Emerald Obsidian (Dark)',
+    subtitle: 'Deep Emerald Night & Radiant Gold Dust',
+    badge: 'Dark Luxury',
+    previewBg: '#021811',
+    previewAccent: '#10b981',
+    config: {
+      presetId: 'smartpay_dark_emerald',
+      name: 'Emerald Obsidian (Dark)',
+      bgBaseColor: '#021811',
+      glowColor1: 'rgba(16, 185, 129, 0.22)',
+      glowColor2: 'rgba(245, 158, 11, 0.15)',
+      patternStyle: 'dots',
+      glowIntensity: 'vibrant',
+      isLight: false,
+    },
+  },
+  {
     id: 'midnight_gold',
     name: 'Midnight Obsidian',
     subtitle: 'Executive Gold & Sapphire Ambient',
-    badge: 'Original Default',
+    badge: 'Original Dark',
     previewBg: '#07090e',
     previewAccent: '#f59e0b',
     config: {
@@ -40,6 +77,7 @@ export const THEME_PRESETS: ThemePresetOption[] = [
       glowColor2: 'rgba(37, 99, 235, 0.06)',
       patternStyle: 'dots',
       glowIntensity: 'vibrant',
+      isLight: false,
     },
   },
   {

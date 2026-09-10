@@ -37,6 +37,8 @@ export interface AdminCredentials {
 }
 
 export type BackgroundPresetId =
+  | 'smartpay_official'
+  | 'smartpay_dark_emerald'
   | 'midnight_gold'
   | 'royal_navy'
   | 'emerald_matrix'
@@ -58,6 +60,7 @@ export interface ThemeSettings {
   glowColor2: string;
   patternStyle: PatternStyle;
   glowIntensity: GlowIntensity;
+  isLight?: boolean;
   customHex?: string;
   updatedAt?: string;
 }
