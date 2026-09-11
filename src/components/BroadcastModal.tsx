@@ -45,9 +45,9 @@ export const BroadcastModal: React.FC<BroadcastModalProps> = ({
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/40">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Share2 className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-emerald-400 bg-white shrink-0 shadow-md flex items-center justify-center">
+              <img src="/smartpay_logo.png" alt="SmartPay 360" className="w-full h-full object-contain p-0.5" referrerPolicy="no-referrer" />
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold text-white">

@@ -134,8 +134,8 @@ export const RewardsModal: React.FC<RewardsModalProps> = ({
         {/* Modal Top Header */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-950/70 via-slate-900 to-slate-950 border-b border-amber-500/30 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0">
-              <Trophy className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 bg-white shrink-0 shadow-lg flex items-center justify-center">
+              <img src="/smartpay_logo.png" alt="SmartPay 360" className="w-full h-full object-contain p-0.5" referrerPolicy="no-referrer" />
             </div>
             <div>
               <div className="flex items-center gap-2">

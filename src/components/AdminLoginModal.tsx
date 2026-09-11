@@ -53,8 +53,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         {/* Header */}
         <div className="p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
-              <Lock className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-amber-500/40 bg-white shrink-0 shadow-md flex items-center justify-center">
+              <img src="/smartpay_logo.png" alt="SmartPay 360" className="w-full h-full object-contain p-0.5" referrerPolicy="no-referrer" />
             </div>
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-1.5">
