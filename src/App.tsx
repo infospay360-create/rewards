@@ -47,6 +47,7 @@ import { SmartPayPosterHeader } from './components/SmartPayPosterHeader';
 import { SmartPayPosterFooter } from './components/SmartPayPosterFooter';
 import { Top10CashSection } from './components/Top10CashSection';
 import { LuckyDrawSection3D } from './components/LuckyDrawSection3D';
+import { AdSenseBanner } from './components/AdSenseBanner';
 import {
   fetchUsersFromSupabase,
   upsertUserInSupabase,
@@ -843,6 +844,9 @@ export default function App() {
 
             {/* Official SmartPay Poster Footer with Motivational Callout & Pillars */}
             <SmartPayPosterFooter currentTheme={currentTheme} />
+
+            {/* Google AdSense Unit (Bottom of Website) */}
+            <AdSenseBanner client="ca-pub-7502019743291076" />
           </>
         )}
       </main>
