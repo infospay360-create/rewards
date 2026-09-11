@@ -35,34 +35,6 @@ export const LuckyDrawSection3D: React.FC<LuckyDrawSection3DProps> = ({
   const qualifiedMembers = users.filter((u) => u.ticketCount > 0 || u.directCount >= 5);
   const totalTicketsDistributed = users.reduce((sum, u) => sum + u.ticketCount, 0);
 
-  // Helper icons for real gifts
-  const getGiftIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return '🧺'; // Washing machine
-      case 2:
-        return '🚴'; // Sports bicycle
-      case 3:
-        return '⚡'; // Mixer grinder
-      case 4:
-        return '🍲'; // Pressure cooker
-      case 5:
-        return '🔥'; // Gas stove
-      case 6:
-        return '🔊'; // Bluetooth speaker
-      case 7:
-        return '🍳'; // Cookware set
-      case 8:
-        return '📱'; // Nokia phone
-      case 9:
-        return '🔋'; // Power bank
-      case 10:
-        return '⌚'; // Titan watch
-      default:
-        return '🎁';
-    }
-  };
-
   return (
     <div className="mb-10 space-y-6">
       {/* 3D HD Header Showcase Banner */}
@@ -203,17 +175,11 @@ export const LuckyDrawSection3D: React.FC<LuckyDrawSection3DProps> = ({
                   </span>
                 </div>
 
-                {/* Gift Visual Icon & Details */}
-                <div className="text-center py-2">
-                  <div className="text-4xl sm:text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">
-                    {getGiftIcon(gift.rank)}
-                  </div>
-                  <h4 className="text-sm font-black uppercase text-slate-950 dark:text-white mt-2 tracking-tight">
+                {/* Gift Name - Only Name, No Logo */}
+                <div className="text-center py-5 sm:py-6 flex-1 flex flex-col items-center justify-center">
+                  <h4 className="text-sm sm:text-base font-black uppercase text-slate-950 dark:text-white tracking-tight leading-snug group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                     {gift.title}
                   </h4>
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-snug">
-                    {gift.detail}
-                  </p>
                 </div>
 
                 {/* Bottom eligibility pill */}

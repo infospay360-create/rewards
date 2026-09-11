@@ -9,15 +9,6 @@ import {
   Trophy,
   Users,
   CheckCircle2,
-  Tv,
-  Bike,
-  Flame,
-  Speaker,
-  Phone,
-  BatteryCharging,
-  Glasses,
-  Utensils,
-  Package,
 } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 import { LUCKY_DRAW_PRIZES_LIST } from '../data/luckyDrawData';
@@ -29,34 +20,6 @@ interface LuckyDrawWinnersBlockProps {
   isOpen?: boolean;
   onToggle?: () => void;
 }
-
-// Icon mapper for the 10 Lucky Draw Gifts
-const getGiftIcon = (iconType: string) => {
-  switch (iconType) {
-    case 'washing-machine':
-      return <Package className="w-5 h-5 text-amber-300" />;
-    case 'bicycle':
-      return <Bike className="w-5 h-5 text-amber-300" />;
-    case 'mixer':
-      return <Utensils className="w-5 h-5 text-amber-300" />;
-    case 'cooker':
-      return <Utensils className="w-5 h-5 text-amber-300" />;
-    case 'gas-stove':
-      return <Flame className="w-5 h-5 text-amber-300" />;
-    case 'speaker':
-      return <Speaker className="w-5 h-5 text-amber-300" />;
-    case 'cookware':
-      return <Utensils className="w-5 h-5 text-amber-300" />;
-    case 'phone':
-      return <Phone className="w-5 h-5 text-amber-300" />;
-    case 'powerbank':
-      return <BatteryCharging className="w-5 h-5 text-amber-300" />;
-    case 'sunglasses':
-      return <Glasses className="w-5 h-5 text-amber-300" />;
-    default:
-      return <Gift className="w-5 h-5 text-amber-300" />;
-  }
-};
 
 export const LuckyDrawWinnersBlock: React.FC<LuckyDrawWinnersBlockProps> = ({
   users,
@@ -189,17 +152,10 @@ export const LuckyDrawWinnersBlock: React.FC<LuckyDrawWinnersBlockProps> = ({
                       </span>
                     </div>
 
-                    <div className="my-1 mx-auto w-10 h-10 rounded-lg bg-black/30 flex items-center justify-center border border-white/15 shadow-inner">
-                      {getGiftIcon(prize.iconType)}
-                    </div>
-
-                    <div>
-                      <h4 className="text-[11px] font-black text-white line-clamp-2 leading-tight uppercase group-hover:text-yellow-200">
+                    <div className="py-2">
+                      <h4 className="text-xs font-black text-white line-clamp-2 leading-tight uppercase group-hover:text-yellow-200">
                         {prize.title}
                       </h4>
-                      <p className="text-[9px] font-bold text-orange-100/90 mt-0.5 line-clamp-1">
-                        {prize.detail}
-                      </p>
                     </div>
                   </div>
                 ))}
