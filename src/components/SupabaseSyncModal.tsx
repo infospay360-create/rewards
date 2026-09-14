@@ -261,7 +261,7 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800">
           <div className="text-xs text-slate-500 dark:text-slate-400">
             Flow: <span className="font-semibold text-slate-700 dark:text-slate-200">Admin</span> →{' '}
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">Supabase DB</span> →{' '}
+          
             <span className="font-semibold text-cyan-600 dark:text-cyan-400">Realtime</span> → All Mobiles
           </div>
           <div className="flex items-center gap-3">
