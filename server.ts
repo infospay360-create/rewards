@@ -249,6 +249,127 @@ function broadcastThemeUpdate(theme: any) {
   }
 }
 
+// ==========================================
+// UPDATE HISTORY LOG STORE (PERSISTENT ON DISK)
+// ==========================================
+const HISTORY_FILE = path.join(DATA_DIR, 'history-store.json');
+let cachedHistory: any[] = [];
+
+function getFormattedDate(d = new Date()) {
+  try {
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return d.toISOString().slice(0, 10);
+  }
+}
+
+function getFormattedTime(d = new Date()) {
+  try {
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  } catch {
+    return d.toTimeString().slice(0, 8);
+  }
+}
+
+function initHistoryStore(): void {
+  try {
+    if (fs.existsSync(HISTORY_FILE)) {
+      const raw = fs.readFileSync(HISTORY_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        cachedHistory = parsed;
+        console.log(`[HistoryStore] Loaded ${cachedHistory.length} history records.`);
+        return;
+      }
+    }
+    const now = new Date();
+    cachedHistory = [
+      {
+        id: 'log-seed-1',
+        timestamp: Date.now() - 1000 * 60 * 15,
+        dateFormatted: getFormattedDate(new Date(Date.now() - 1000 * 60 * 15)),
+        timeFormatted: getFormattedTime(new Date(Date.now() - 1000 * 60 * 15)),
+        userId: 'SPAY330606',
+        userName: 'Babla Paul',
+        actionType: 'ADD_DIRECT',
+        actionLabel: 'Direct Added (+1)',
+        changeSummary: 'Directs increased: 3 ➔ 4 | Tickets: 0',
+        previousDirects: 3,
+        newDirects: 4,
+        previousTickets: 0,
+        newTickets: 0,
+      },
+      {
+        id: 'log-seed-2',
+        timestamp: Date.now() - 1000 * 60 * 50,
+        dateFormatted: getFormattedDate(new Date(Date.now() - 1000 * 60 * 50)),
+        timeFormatted: getFormattedTime(new Date(Date.now() - 1000 * 60 * 50)),
+        userId: 'SPAY447004',
+        userName: 'Suman Dey',
+        actionType: 'UPGRADE',
+        actionLabel: 'Contest Upgrade',
+        changeSummary: 'Directs: 0 ➔ 1 | Tickets: 0',
+        previousDirects: 0,
+        newDirects: 1,
+        previousTickets: 0,
+        newTickets: 0,
+      },
+    ];
+    persistHistoryStore();
+  } catch (err) {
+    console.warn('[HistoryStore] Init error:', err);
+  }
+}
+
+function persistHistoryStore(): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(cachedHistory.slice(0, 300), null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[HistoryStore] Failed to save history:', err);
+  }
+}
+
+function addHistoryRecord(entry: any) {
+  const now = new Date();
+  const newLog = {
+    id: entry.id || `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: entry.timestamp || Date.now(),
+    dateFormatted: entry.dateFormatted || getFormattedDate(now),
+    timeFormatted: entry.timeFormatted || getFormattedTime(now),
+    userId: String(entry.userId || '').toUpperCase(),
+    userName: String(entry.userName || 'Unknown'),
+    actionType: entry.actionType || 'UPGRADE',
+    actionLabel: entry.actionLabel || 'Contest Update',
+    changeSummary: String(entry.changeSummary || ''),
+    previousDirects: typeof entry.previousDirects === 'number' ? entry.previousDirects : undefined,
+    newDirects: typeof entry.newDirects === 'number' ? entry.newDirects : undefined,
+    previousTickets: typeof entry.previousTickets === 'number' ? entry.previousTickets : undefined,
+    newTickets: typeof entry.newTickets === 'number' ? entry.newTickets : undefined,
+  };
+  cachedHistory.unshift(newLog);
+  if (cachedHistory.length > 300) cachedHistory = cachedHistory.slice(0, 300);
+  persistHistoryStore();
+  broadcastHistoryUpdate(cachedHistory);
+  return newLog;
+}
+
+function broadcastHistoryUpdate(historyLogs: any[]) {
+  const payload = JSON.stringify({
+    type: 'HISTORY_UPDATED',
+    history: historyLogs,
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
 // Broadcast real-time update to all connected browsers and mobile devices
 function broadcastLiveUpdate(source = 'update') {
   const payload = JSON.stringify({
@@ -268,9 +389,10 @@ function broadcastLiveUpdate(source = 'update') {
   }
 }
 
-// Initialize store at startup
+// Initialize stores at startup
 initStore();
 initThemeStore();
+initHistoryStore();
 
 // ==========================================
 // ANTI-CACHE & CORS MIDDLEWARE FOR ALL /api
@@ -311,6 +433,7 @@ app.get('/api/stream', (req, res) => {
     count: cachedUsers.length,
     users: cachedUsers,
     theme: cachedTheme,
+    history: cachedHistory,
   });
   res.write(`data: ${initialPayload}\n\n`);
 
@@ -465,6 +588,33 @@ app.post('/api/users/upgrade', (req, res) => {
     };
     updatedList[existingIdx] = updatedUser;
     targetUser = updatedUser;
+
+    // Record History Log for update
+    let actionType: 'ADD_DIRECT' | 'MINUS_DIRECT' | 'UPGRADE' = 'UPGRADE';
+    let actionLabel = 'Contest Upgrade';
+    if (isAdditive && typeof directCount === 'number') {
+      if (directCount > 0) {
+        actionType = 'ADD_DIRECT';
+        actionLabel = `Direct Added (+${directCount})`;
+      } else if (directCount < 0) {
+        actionType = 'MINUS_DIRECT';
+        actionLabel = `Direct Reduced (${directCount})`;
+      }
+    }
+    const diffTickets = newTickets - curr.ticketCount;
+    const ticketSummary = diffTickets !== 0 ? ` | Tickets: ${curr.ticketCount} ➔ ${newTickets}` : ` | Tickets: ${newTickets}`;
+    const summary = `Directs: ${curr.directCount} ➔ ${newDirect}${ticketSummary}`;
+    addHistoryRecord({
+      userId: cleanId,
+      userName: updatedUser.name,
+      actionType,
+      actionLabel,
+      changeSummary: summary,
+      previousDirects: curr.directCount,
+      newDirects: newDirect,
+      previousTickets: curr.ticketCount,
+      newTickets: newTickets,
+    });
   } else {
     isNew = true;
     let directs = 0;
@@ -493,6 +643,19 @@ app.post('/api/users/upgrade', (req, res) => {
     };
     updatedList.unshift(newUser);
     targetUser = newUser;
+
+    // Record History Log for new user
+    addHistoryRecord({
+      userId: cleanId,
+      userName: newUser.name,
+      actionType: 'NEW_USER',
+      actionLabel: 'New Contestant Registered',
+      changeSummary: `Registered with ${directs} Directs | ${tickets} Tickets`,
+      previousDirects: 0,
+      newDirects: directs,
+      previousTickets: 0,
+      newTickets: tickets,
+    });
   }
 
   cachedUsers = sortLeaderboard(updatedList);
@@ -536,6 +699,8 @@ app.post('/api/users/edit', (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
+  const oldUser = cachedUsers.find((u) => u.id === recalculated.id || (cleanId && u.userId.toUpperCase() === cleanId));
+
   const list = cachedUsers.map((u) => {
     if (u.id === recalculated.id || (cleanId && u.userId.toUpperCase() === cleanId)) {
       return recalculated;
@@ -546,6 +711,20 @@ app.post('/api/users/edit', (req, res) => {
   persistStore();
   broadcastLiveUpdate('edit');
   syncUserToSupabase(recalculated);
+
+  // Record History Log for Edit
+  addHistoryRecord({
+    userId: cleanId,
+    userName: recalculated.name,
+    actionType: 'EDIT',
+    actionLabel: 'Details Edited',
+    changeSummary: `Directs: ${oldUser ? oldUser.directCount : 0} ➔ ${directNum} | Tickets: ${oldUser ? oldUser.ticketCount : 0} ➔ ${finalTickets}`,
+    previousDirects: oldUser?.directCount,
+    newDirects: directNum,
+    previousTickets: oldUser?.ticketCount,
+    newTickets: finalTickets,
+  });
+
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
@@ -555,19 +734,68 @@ app.post('/api/users/reset', (req, res) => {
   persistStore();
   broadcastLiveUpdate('reset');
   syncAllUsersToSupabase(cachedUsers);
+
+  // Record History Log for Reset
+  addHistoryRecord({
+    userId: 'SYSTEM',
+    userName: 'Admin Snapshot Reset',
+    actionType: 'RESET',
+    actionLabel: 'Contest Reset',
+    changeSummary: 'Leaderboard restored to initial contest state',
+  });
+
   res.json({ success: true, version: dataVersion, users: cachedUsers });
 });
 
 // DELETE remove a user by ID or userId
 app.delete('/api/users/:id', (req, res) => {
   const targetId = req.params.id.trim().toUpperCase();
+  const existing = cachedUsers.find(
+    (u) => u.id === req.params.id || u.userId.toUpperCase() === targetId
+  );
   cachedUsers = cachedUsers.filter(
     (u) => u.id !== req.params.id && u.userId.toUpperCase() !== targetId
   );
   persistStore();
   broadcastLiveUpdate('delete');
   deleteUserFromSupabase(targetId, req.params.id);
+
+  // Record History Log for Delete
+  addHistoryRecord({
+    userId: targetId,
+    userName: existing ? existing.name : targetId,
+    actionType: 'DELETE',
+    actionLabel: 'User Removed',
+    changeSummary: `Removed contestant ${existing ? existing.name : targetId} (${targetId})`,
+  });
+
   res.json({ success: true, version: dataVersion, users: cachedUsers });
+});
+
+// ==========================================
+// UPDATE HISTORY API ROUTES
+// ==========================================
+app.get('/api/history', (req, res) => {
+  res.json({
+    count: cachedHistory.length,
+    history: cachedHistory,
+  });
+});
+
+app.post('/api/history', (req, res) => {
+  const entry = req.body;
+  if (!entry || typeof entry !== 'object') {
+    return res.status(400).json({ error: 'Valid history log object required' });
+  }
+  const saved = addHistoryRecord(entry);
+  res.json({ success: true, log: saved, history: cachedHistory });
+});
+
+app.post('/api/history/clear', (req, res) => {
+  cachedHistory = [];
+  persistHistoryStore();
+  broadcastHistoryUpdate([]);
+  res.json({ success: true, history: [] });
 });
 
 // Supabase Status & Schema Endpoints

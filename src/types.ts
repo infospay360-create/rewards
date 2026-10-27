@@ -65,3 +65,19 @@ export interface ThemeSettings {
   updatedAt?: string;
 }
 
+export interface UpdateHistoryLog {
+  id: string;
+  timestamp: number; // Unix timestamp ms
+  dateFormatted: string; // e.g., "27 Oct 2026"
+  timeFormatted: string; // e.g., "10:25:40 AM"
+  userId: string; // e.g., "SPAY447004"
+  userName: string; // e.g., "Suman Dey"
+  actionType: 'ADD_DIRECT' | 'MINUS_DIRECT' | 'UPGRADE' | 'NEW_USER' | 'EDIT' | 'RESET' | 'DELETE';
+  actionLabel: string; // e.g., "Direct Added (+1)", "Direct Decreased (-1)", "New Contestant"
+  changeSummary: string; // detailed changes, e.g., "Directs: 4 ➔ 5 | Tickets: 0 ➔ 1"
+  previousDirects?: number;
+  newDirects?: number;
+  previousTickets?: number;
+  newTickets?: number;
+}
+

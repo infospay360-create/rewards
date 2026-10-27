@@ -1,0 +1,62 @@
+[
+  {
+    "id": "log-1793077455357-t2rkl",
+    "timestamp": 1793077455357,
+    "dateFormatted": "27 Oct 2026",
+    "timeFormatted": "05:04:15 AM",
+    "userId": "SPAY447004",
+    "userName": "Suman Dey",
+    "actionType": "UPGRADE",
+    "actionLabel": "Contest Upgrade",
+    "changeSummary": "Directs: 2 ➔ 1 | Tickets: 0",
+    "previousDirects": 2,
+    "newDirects": 1,
+    "previousTickets": 0,
+    "newTickets": 0
+  },
+  {
+    "id": "log-1793077447026-3i149",
+    "timestamp": 1793077447026,
+    "dateFormatted": "27 Oct 2026",
+    "timeFormatted": "05:04:07 AM",
+    "userId": "SPAY447004",
+    "userName": "Suman Dey",
+    "actionType": "ADD_DIRECT",
+    "actionLabel": "Direct Added (+1)",
+    "changeSummary": "Directs: 1 ➔ 2 | Tickets: 0",
+    "previousDirects": 1,
+    "newDirects": 2,
+    "previousTickets": 0,
+    "newTickets": 0
+  },
+  {
+    "id": "log-seed-1",
+    "timestamp": 1793076537094,
+    "dateFormatted": "27 Oct 2026",
+    "timeFormatted": "04:48:57 AM",
+    "userId": "SPAY330606",
+    "userName": "Babla Paul",
+    "actionType": "ADD_DIRECT",
+    "actionLabel": "Direct Added (+1)",
+    "changeSummary": "Directs increased: 3 ➔ 4 | Tickets: 0",
+    "previousDirects": 3,
+    "newDirects": 4,
+    "previousTickets": 0,
+    "newTickets": 0
+  },
+  {
+    "id": "log-seed-2",
+    "timestamp": 1793074437108,
+    "dateFormatted": "27 Oct 2026",
+    "timeFormatted": "04:13:57 AM",
+    "userId": "SPAY447004",
+    "userName": "Suman Dey",
+    "actionType": "UPGRADE",
+    "actionLabel": "Contest Upgrade",
+    "changeSummary": "Directs: 0 ➔ 1 | Tickets: 0",
+    "previousDirects": 0,
+    "newDirects": 1,
+    "previousTickets": 0,
+    "newTickets": 0
+  }
+]

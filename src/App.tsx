@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ShieldCheck } from 'lucide-react';
-import { LeaderboardUser, ThemeSettings } from './types';
+import { LeaderboardUser, ThemeSettings, UpdateHistoryLog } from './types';
 import { INITIAL_LEADERBOARD_USERS } from './data/initialData';
 import {
   loadUsersFromStorage,
@@ -20,6 +20,17 @@ import {
   broadcastToOtherTabs,
   subscribeToTabBroadcasts,
 } from './utils/leaderboardUtils';
+import {
+  formatLogDate,
+  formatLogTime,
+  getStoredHistoryLogs,
+  saveStoredHistoryLogs,
+  broadcastHistory,
+  subscribeToHistoryBroadcasts,
+  fetchHistoryFromApi,
+  postHistoryLogToApi,
+  clearHistoryOnApi,
+} from './utils/historyUtils';
 import {
   getStoredTheme,
   saveStoredTheme,
@@ -103,6 +114,9 @@ export default function App() {
 
   // Background theme state
   const [currentTheme, setCurrentTheme] = useState<ThemeSettings>(getStoredTheme);
+
+  // Live Update History state
+  const [historyLogs, setHistoryLogs] = useState<UpdateHistoryLog[]>(getStoredHistoryLogs);
 
   const handleThemeChange = useCallback(
     async (newTheme: ThemeSettings, syncToServer = true) => {
@@ -225,6 +239,14 @@ export default function App() {
     // Immediate initial fetch
     fetchFullData(false);
 
+    // Fetch initial history logs from server
+    fetchHistoryFromApi().then((serverLogs) => {
+      if (isMounted && Array.isArray(serverLogs) && serverLogs.length > 0) {
+        setHistoryLogs(serverLogs);
+        saveStoredHistoryLogs(serverLogs);
+      }
+    });
+
     // Priority A: Supabase Realtime (postgres_changes broadcast instantly to all mobiles & browsers)
     const unsubscribeSupabase = subscribeToSupabaseRealtime((freshUsers) => {
       if (isMounted && freshUsers && freshUsers.length > 0) {
@@ -244,6 +266,14 @@ export default function App() {
     const unsubscribeTheme = subscribeToThemeBroadcasts((newTheme) => {
       if (isMounted && newTheme && newTheme.bgBaseColor) {
         setCurrentTheme(newTheme);
+      }
+    });
+
+    // Listen for cross-tab update history broadcasts
+    const unsubscribeHistory = subscribeToHistoryBroadcasts((broadcastLogs) => {
+      if (isMounted && Array.isArray(broadcastLogs)) {
+        setHistoryLogs(broadcastLogs);
+        saveStoredHistoryLogs(broadcastLogs);
       }
     });
 
@@ -307,6 +337,10 @@ export default function App() {
             if (data && data.theme && data.theme.bgBaseColor) {
               setCurrentTheme(data.theme);
               saveStoredTheme(data.theme);
+            }
+            if (data && Array.isArray(data.history)) {
+              setHistoryLogs(data.history);
+              saveStoredHistoryLogs(data.history);
             }
           } catch (e) {
             console.error('[SSE] Parse error:', e);
@@ -372,6 +406,7 @@ export default function App() {
       unsubscribeSupabaseTheme();
       unsubscribeTabs();
       unsubscribeTheme();
+      unsubscribeHistory();
       window.removeEventListener('storage', handleStorageChange);
       if (eventSource) eventSource.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -514,6 +549,49 @@ export default function App() {
         });
       }
 
+      // Record in Live Update History
+      const diffTick = newTickets - oldTickets;
+      const tickText = diffTick !== 0 ? ` | Tickets: ${oldTickets} ➔ ${newTickets}` : ` | Tickets: ${newTickets}`;
+      const changeText = isNew
+        ? `Registered with ${data.directCount || 0} Directs | ${newTickets} Tickets`
+        : `Directs: ${existingIndex >= 0 ? users[existingIndex].directCount : 0} ➔ ${targetUser ? targetUser.directCount : 0}${tickText}`;
+
+      let actionType: 'ADD_DIRECT' | 'MINUS_DIRECT' | 'UPGRADE' | 'NEW_USER' = isNew ? 'NEW_USER' : 'UPGRADE';
+      let actionLabel = isNew ? 'New Contestant' : 'Contest Upgrade';
+      if (!isNew && data.isAdditive && typeof data.directCount === 'number') {
+        if (data.directCount > 0) {
+          actionType = 'ADD_DIRECT';
+          actionLabel = `Direct Added (+${data.directCount})`;
+        } else if (data.directCount < 0) {
+          actionType = 'MINUS_DIRECT';
+          actionLabel = `Direct Reduced (${data.directCount})`;
+        }
+      }
+
+      const historyEntry: UpdateHistoryLog = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: Date.now(),
+        dateFormatted: formatLogDate(),
+        timeFormatted: formatLogTime(),
+        userId: cleanId,
+        userName: targetUser ? targetUser.name : cleanId,
+        actionType,
+        actionLabel,
+        changeSummary: changeText,
+        previousDirects: existingIndex >= 0 ? users[existingIndex].directCount : 0,
+        newDirects: targetUser ? targetUser.directCount : 0,
+        previousTickets: oldTickets,
+        newTickets: newTickets,
+      };
+
+      setHistoryLogs((prev) => {
+        const nextLogs = [historyEntry, ...prev.filter((l) => l.id !== historyEntry.id)].slice(0, 300);
+        saveStoredHistoryLogs(nextLogs);
+        broadcastHistory(nextLogs);
+        return nextLogs;
+      });
+      postHistoryLogToApi(historyEntry);
+
       // Sync with cloud server so all browsers & mobile devices see it
       upgradeUserOnApi(data).then((res) => {
         if (res && res.users) {
@@ -571,6 +649,33 @@ export default function App() {
       // Persist to server
       syncUsersToApi(sorted);
 
+      // Record in Live Update History
+      const diffTick = newTickets - oldTickets;
+      const tickText = diffTick !== 0 ? ` | Tickets: ${oldTickets} ➔ ${newTickets}` : ` | Tickets: ${newTickets}`;
+      const historyEntry: UpdateHistoryLog = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: Date.now(),
+        dateFormatted: formatLogDate(),
+        timeFormatted: formatLogTime(),
+        userId: target.userId,
+        userName: target.name,
+        actionType: count >= 0 ? 'ADD_DIRECT' : 'MINUS_DIRECT',
+        actionLabel: count >= 0 ? `Direct Added (+${count})` : `Direct Reduced (${count})`,
+        changeSummary: `Directs: ${target.directCount} ➔ ${newDirect}${tickText}`,
+        previousDirects: target.directCount,
+        newDirects: newDirect,
+        previousTickets: oldTickets,
+        newTickets: newTickets,
+      };
+
+      setHistoryLogs((prev) => {
+        const nextLogs = [historyEntry, ...prev.filter((l) => l.id !== historyEntry.id)].slice(0, 300);
+        saveStoredHistoryLogs(nextLogs);
+        broadcastHistory(nextLogs);
+        return nextLogs;
+      });
+      postHistoryLogToApi(historyEntry);
+
       const newRank = sorted.findIndex((u) => u.userId === userId) + 1;
 
       if (count > 0 && newTickets > oldTickets) {
@@ -598,6 +703,8 @@ export default function App() {
 
   // Save manual edits from modal (persists name, ID, directs to server and other clients)
   const handleSaveEditedUser = useCallback((updated: LeaderboardUser) => {
+    const oldUser = users.find((u) => u.id === updated.id || u.userId === updated.userId);
+
     setUsers((prev) => {
       const list = prev.map((u) => (u.id === updated.id ? updated : u));
       const sorted = sortLeaderboard(list);
@@ -620,8 +727,33 @@ export default function App() {
       }
     });
 
+    // Record in Live Update History
+    const historyEntry: UpdateHistoryLog = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: Date.now(),
+      dateFormatted: formatLogDate(),
+      timeFormatted: formatLogTime(),
+      userId: updated.userId,
+      userName: updated.name,
+      actionType: 'EDIT',
+      actionLabel: 'Details Edited',
+      changeSummary: `Updated info for ${updated.name} (${updated.userId}) | Directs: ${oldUser ? oldUser.directCount : 0} ➔ ${updated.directCount}, Tickets: ${oldUser ? oldUser.ticketCount : 0} ➔ ${updated.ticketCount}`,
+      previousDirects: oldUser?.directCount,
+      newDirects: updated.directCount,
+      previousTickets: oldUser?.ticketCount,
+      newTickets: updated.ticketCount,
+    };
+
+    setHistoryLogs((prev) => {
+      const nextLogs = [historyEntry, ...prev.filter((l) => l.id !== historyEntry.id)].slice(0, 300);
+      saveStoredHistoryLogs(nextLogs);
+      broadcastHistory(nextLogs);
+      return nextLogs;
+    });
+    postHistoryLogToApi(historyEntry);
+
     showToast(`✅ Member ${updated.userId} updated & saved to Supabase cloud database.`);
-  }, [showToast]);
+  }, [users, showToast]);
 
   // Reset to initial 26 members
   const handleResetData = useCallback(async () => {
@@ -642,9 +774,40 @@ export default function App() {
       setUsers(finalList);
       saveUsersToStorage(finalList);
       broadcastToOtherTabs(finalList);
+
+      // Record in Live Update History
+      const historyEntry: UpdateHistoryLog = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: Date.now(),
+        dateFormatted: formatLogDate(),
+        timeFormatted: formatLogTime(),
+        userId: 'SYSTEM',
+        userName: 'Admin Snapshot Reset',
+        actionType: 'RESET',
+        actionLabel: 'Contest Reset',
+        changeSummary: 'Leaderboard restored to initial contest state',
+      };
+
+      setHistoryLogs((prev) => {
+        const nextLogs = [historyEntry, ...prev].slice(0, 300);
+        saveStoredHistoryLogs(nextLogs);
+        broadcastHistory(nextLogs);
+        return nextLogs;
+      });
+      postHistoryLogToApi(historyEntry);
+
       showToast('🔄 Leaderboard reset to original contest snapshot across Supabase & all devices.');
     }
   }, [isAdmin, showToast]);
+
+  // Clear update history
+  const handleClearHistory = useCallback(async () => {
+    setHistoryLogs([]);
+    saveStoredHistoryLogs([]);
+    broadcastHistory([]);
+    await clearHistoryOnApi();
+    showToast('🗑️ Update history cleared.');
+  }, [showToast]);
 
   const scrollToUpgrade = () => {
     const el = document.getElementById('quick-upgrade-section');
@@ -749,6 +912,8 @@ export default function App() {
           <AdminPortal
             isAdmin={isAdmin}
             users={users}
+            historyLogs={historyLogs}
+            onClearHistory={handleClearHistory}
             currentTheme={currentTheme}
             onThemeChange={handleThemeChange}
             onLoginSuccess={handleAdminLoginSuccess}

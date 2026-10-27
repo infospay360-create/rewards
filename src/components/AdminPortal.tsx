@@ -22,8 +22,10 @@ import {
   RefreshCw,
   Share2,
   RotateCcw,
+  Clock,
+  Calendar,
 } from 'lucide-react';
-import { LeaderboardUser, ThemeSettings } from '../types';
+import { LeaderboardUser, ThemeSettings, UpdateHistoryLog } from '../types';
 import {
   verifyAdminCredentials,
   getStoredCustomPassword,
@@ -35,10 +37,13 @@ import {
 } from '../utils/leaderboardUtils';
 import { QuickUpgradeBar } from './QuickUpgradeBar';
 import { ThemeSelectorCard } from './ThemeSelectorCard';
+import { AdminUpdateHistory } from './AdminUpdateHistory';
 
 interface AdminPortalProps {
   isAdmin: boolean;
   users: LeaderboardUser[];
+  historyLogs?: UpdateHistoryLog[];
+  onClearHistory?: () => void;
   currentTheme: ThemeSettings;
   onThemeChange: (newTheme: ThemeSettings, syncToServer?: boolean) => void;
   onLoginSuccess: () => void;
@@ -64,6 +69,8 @@ interface AdminPortalProps {
 export const AdminPortal: React.FC<AdminPortalProps> = ({
   isAdmin,
   users,
+  historyLogs = [],
+  onClearHistory = () => {},
   currentTheme,
   onThemeChange,
   onLoginSuccess,
@@ -95,6 +102,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Search in Admin User List
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Active Admin Sub-tab
+  const [activeTab, setActiveTab] = useState<'MANAGEMENT' | 'HISTORY'>('MANAGEMENT');
 
   // Rate-limiting check
   useEffect(() => {
@@ -390,47 +400,173 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
       </div>
 
-      {/* Fast User ID & Direct Upgrade System */}
-      <QuickUpgradeBar
-        isAdmin={isAdmin}
-        onOpenLogin={() => {}}
-        onOpenSupabaseModal={onOpenSupabaseModal}
-        users={users}
-        onUpgradeUser={onUpgradeUser}
-      />
+      {/* Admin Mode Switcher Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/95 border border-slate-800 p-2.5 rounded-2xl shadow-lg">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('MANAGEMENT')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              activeTab === 'MANAGEMENT'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Contestants & Directs</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold ${
+                activeTab === 'MANAGEMENT' ? 'bg-slate-950/30 text-slate-950' : 'bg-slate-800 text-slate-300'
+              }`}
+            >
+              {users.length}
+            </span>
+          </button>
 
-      {/* Admin Background & Theme Customizer */}
-      <ThemeSelectorCard
-        currentTheme={currentTheme}
-        onThemeChange={onThemeChange}
-        showToast={showToast}
-      />
+          <button
+            type="button"
+            onClick={() => setActiveTab('HISTORY')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              activeTab === 'HISTORY'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>📋 Update History</span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/40 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              LIVE
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold ${
+                activeTab === 'HISTORY' ? 'bg-slate-950/30 text-slate-950' : 'bg-slate-800 text-amber-300'
+              }`}
+            >
+              {historyLogs.length}
+            </span>
+          </button>
+        </div>
 
-      {/* Grid: 1. Personal Password & Security Manager, 2. Fast Tools & Sync */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: Change Personal Admin Password (Anti-Hack Protection) */}
-        <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 sm:p-6 shadow-xl">
-          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-800">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <span>Personal Admin Security</span>
-                {hasCustomPass ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    Custom Password Active
+        {/* Live latest update ticker pill */}
+        {historyLogs.length > 0 && (
+          <div
+            onClick={() => setActiveTab('HISTORY')}
+            className="flex items-center gap-2 text-xs text-slate-300 bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 px-3 py-1.5 rounded-xl cursor-pointer transition"
+            title="Click to view full Update History"
+          >
+            <span className="text-[10px] font-bold text-amber-400 font-mono">LATEST:</span>
+            <span className="font-bold text-white max-w-[130px] truncate">
+              {historyLogs[0].userName} ({historyLogs[0].userId})
+            </span>
+            <span className="text-emerald-400 text-[11px] font-mono font-bold">
+              {historyLogs[0].actionLabel}
+            </span>
+            <span className="text-slate-400 text-[10px] font-mono">
+              ⏰ {historyLogs[0].timeFormatted}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {activeTab === 'HISTORY' ? (
+        <AdminUpdateHistory
+          logs={historyLogs}
+          onClearHistory={onClearHistory}
+          showToast={showToast}
+        />
+      ) : (
+        <>
+          {/* Live Recent Updates Ticker Banner inside Management view */}
+          {historyLogs.length > 0 && (
+            <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/30 border border-amber-500/30 rounded-2xl p-4 shadow-lg">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-white">Recent Updates (Time & Date Live)</span>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    LIVE RECORD
                   </span>
-                ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    Default Pass in Use
-                  </span>
-                )}
-              </h3>
-              <p className="text-xs text-slate-400">
-                Set your own secret password so no one else can log in or hack your portal
-              </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('HISTORY')}
+                  className="text-[11px] font-bold text-amber-400 hover:text-amber-300 transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>Sabhi {historyLogs.length} Logs Dekhein</span>
+                  <span>➔</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                {historyLogs.slice(0, 3).map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-amber-500/30 transition flex flex-col justify-between gap-1"
+                  >
+                    <div className="flex items-center justify-between gap-1 text-[11px]">
+                      <span className="font-bold text-white truncate max-w-[120px]">
+                        {log.userName}
+                      </span>
+                      <span className="font-mono text-amber-400 font-bold text-[10px]">
+                        {log.userId}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-300 font-mono truncate">
+                      {log.changeSummary}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-900">
+                      <span>📅 {log.dateFormatted}</span>
+                      <span className="text-amber-300 font-bold">⏰ {log.timeFormatted}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Fast User ID & Direct Upgrade System */}
+          <QuickUpgradeBar
+            isAdmin={isAdmin}
+            onOpenLogin={() => {}}
+            onOpenSupabaseModal={onOpenSupabaseModal}
+            users={users}
+            onUpgradeUser={onUpgradeUser}
+          />
+
+          {/* Admin Background & Theme Customizer */}
+          <ThemeSelectorCard
+            currentTheme={currentTheme}
+            onThemeChange={onThemeChange}
+            showToast={showToast}
+          />
+
+          {/* Grid: 1. Personal Password & Security Manager, 2. Fast Tools & Sync */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Card 1: Change Personal Admin Password (Anti-Hack Protection) */}
+            <div className="rounded-2xl bg-slate-900 border border-slate-800 p-5 sm:p-6 shadow-xl">
+              <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-800">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>Personal Admin Security</span>
+                    {hasCustomPass ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        Custom Password Active
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        Default Pass in Use
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Set your own secret password so no one else can log in or hack your portal
+                  </p>
+                </div>
           </div>
 
           <form onSubmit={handleSaveCustomSecurity} className="space-y-3.5">
@@ -669,6 +805,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
