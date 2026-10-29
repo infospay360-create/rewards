@@ -135,10 +135,39 @@ async function hydrateFromSupabase(): Promise<boolean> {
       cachedUsers = sortLeaderboard(mapped);
       persistStore();
       console.log(`[Supabase Server] Hydrated ${cachedUsers.length} users from Supabase!`);
+
+      // Also hydrate contest_winners_settings from Supabase
+      try {
+        const { data: winData, error: winErr } = await supabaseServer
+          .from('contest_winners_settings')
+          .select('*')
+          .eq('id', 'current_winners')
+          .maybeSingle();
+
+        if (!winErr && winData) {
+          cachedWinnersSettings = {
+            isVisible: typeof winData.is_visible === 'boolean' ? winData.is_visible : true,
+            title: winData.title || cachedWinnersSettings.title,
+            announcementSubtitle: winData.announcement_subtitle || cachedWinnersSettings.announcementSubtitle,
+            lastUpdated: winData.last_updated || new Date().toISOString(),
+            winners: Array.isArray(winData.winners) ? winData.winners : cachedWinnersSettings.winners,
+          };
+          winnersVersion = Date.now();
+          persistWinnersStore();
+          console.log(`[Supabase Server] Hydrated winners from Supabase! (Visible: ${cachedWinnersSettings.isVisible})`);
+        } else if (!winErr && !winData) {
+          console.log('[Supabase Server] contest_winners_settings table is empty. Seeding initial winners...');
+          await syncWinnersToSupabase(cachedWinnersSettings);
+        }
+      } catch (wErr) {
+        console.warn('[Supabase Server] Winners hydrate note:', wErr);
+      }
+
       return true;
     } else if (Array.isArray(data) && data.length === 0) {
       console.log('[Supabase Server] Table exists but empty. Seeding initial contest users...');
       await syncAllUsersToSupabase(cachedUsers);
+      await syncWinnersToSupabase(cachedWinnersSettings);
       return true;
     }
   } catch (err) {
@@ -374,6 +403,7 @@ function broadcastHistoryUpdate(historyLogs: any[]) {
 // REWARDS WINNER STORE (PERSISTENT ON DISK)
 // ==========================================
 const WINNERS_FILE = path.join(DATA_DIR, 'winners-store.json');
+let winnersVersion = Date.now();
 let cachedWinnersSettings: WinnersSettings = {
   isVisible: true,
   title: '🏆 SmartPay 360 Official Rewards & Winners Announcement 🎊',
@@ -443,6 +473,54 @@ let cachedWinnersSettings: WinnersSettings = {
   ],
 };
 
+async function syncWinnersToSupabase(settings: WinnersSettings) {
+  if (!supabaseServer) return;
+  try {
+    const row = {
+      id: 'current_winners',
+      is_visible: settings.isVisible,
+      title: settings.title,
+      announcement_subtitle: settings.announcementSubtitle || '',
+      last_updated: settings.lastUpdated || new Date().toISOString(),
+      winners: settings.winners || [],
+    };
+    const { error } = await supabaseServer
+      .from('contest_winners_settings')
+      .upsert(row, { onConflict: 'id' });
+
+    if (error) {
+      console.warn('[Supabase Server] Winners sync error:', error.message);
+    } else {
+      console.log(`[Supabase Server] Synced contest_winners_settings to Supabase (Visible: ${settings.isVisible})`);
+    }
+
+    if (Array.isArray(settings.winners) && settings.winners.length > 0) {
+      try {
+        const indRows = settings.winners.map((w) => ({
+          id: w.id || `win-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          user_id: String(w.userId || '').toUpperCase(),
+          name: w.name,
+          prize_category: w.prizeCategory,
+          rank_or_position: String(w.rankOrPosition),
+          prize_title: w.prizeTitle,
+          prize_value: w.prizeValue,
+          announced_date: w.announcedDate || new Date().toISOString().split('T')[0],
+          claim_status: w.claimStatus || 'VERIFIED',
+          badge_note: w.badgeNote || '',
+          updated_at: new Date().toISOString(),
+        }));
+        await supabaseServer
+          .from('contest_winners')
+          .upsert(indRows, { onConflict: 'id' });
+      } catch (indErr) {
+        console.warn('[Supabase Server] Ind winners sync note:', indErr);
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase Server] Winners sync exception:', err);
+  }
+}
+
 function initWinnersStore(): void {
   try {
     if (fs.existsSync(WINNERS_FILE)) {
@@ -450,6 +528,7 @@ function initWinnersStore(): void {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.isVisible === 'boolean' && Array.isArray(parsed.winners)) {
         cachedWinnersSettings = parsed;
+        winnersVersion = Date.now();
         console.log(`[WinnersStore] Loaded ${cachedWinnersSettings.winners.length} winners (Visible: ${cachedWinnersSettings.isVisible})`);
         return;
       }
@@ -472,9 +551,12 @@ function persistWinnersStore(): void {
 }
 
 function broadcastWinnersUpdate(settings: WinnersSettings) {
+  winnersVersion = Date.now();
   const payload = JSON.stringify({
     type: 'WINNERS_UPDATED',
+    winnersVersion,
     settings,
+    winners: settings,
   });
   for (const client of sseClients) {
     try {
@@ -581,7 +663,9 @@ app.get('/api/version', (req, res) => {
   res.json({
     version: dataVersion,
     themeVersion: themeVersion,
+    winnersVersion: winnersVersion,
     theme: cachedTheme,
+    winners: cachedWinnersSettings,
     count: cachedUsers.length,
     timestamp: new Date().toISOString(),
   });
@@ -943,6 +1027,7 @@ app.post('/api/winners', (req, res) => {
 
   persistWinnersStore();
   broadcastWinnersUpdate(cachedWinnersSettings);
+  syncWinnersToSupabase(cachedWinnersSettings);
 
   // Also log into update history if admin updated winners
   addHistoryRecord({
@@ -970,6 +1055,7 @@ app.post('/api/winners/toggle-visibility', (req, res) => {
 
   persistWinnersStore();
   broadcastWinnersUpdate(cachedWinnersSettings);
+  syncWinnersToSupabase(cachedWinnersSettings);
 
   addHistoryRecord({
     userId: 'ADMIN',
@@ -980,6 +1066,11 @@ app.post('/api/winners/toggle-visibility', (req, res) => {
   });
 
   res.json({ success: true, settings: cachedWinnersSettings });
+});
+
+app.post('/api/supabase/seed-winners', async (req, res) => {
+  await syncWinnersToSupabase(cachedWinnersSettings);
+  res.json({ success: true, winners: cachedWinnersSettings });
 });
 
 // Supabase Status & Schema Endpoints
@@ -1042,6 +1133,23 @@ app.post('/api/supabase/seed', async (req, res) => {
   }
   await syncAllUsersToSupabase(cachedUsers);
   res.json({ success: true, count: cachedUsers.length });
+});
+
+app.post('/api/supabase/config', (req, res) => {
+  const { url, anonKey, projectId } = req.body;
+  if (!url || !anonKey) {
+    return res.status(400).json({ error: 'url and anonKey are required' });
+  }
+  try {
+    supabaseServer = createClient(url.trim(), anonKey.trim(), {
+      auth: { persistSession: false },
+    });
+    console.log('[Supabase Server] Reconfigured client with URL:', url);
+    res.json({ success: true, message: 'Supabase client updated on server' });
+  } catch (err: any) {
+    console.error('[Supabase Server] Failed to reconfigure client:', err);
+    res.status(500).json({ error: err.message || 'Failed to initialize Supabase client' });
+  }
 });
 
 // ==========================================

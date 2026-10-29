@@ -316,7 +316,9 @@ export async function fetchUsersFromApi(): Promise<{ users: LeaderboardUser[]; v
 export interface ServerVersionInfo {
   version: number;
   themeVersion?: number;
+  winnersVersion?: number;
   theme?: any;
+  winners?: any;
   count?: number;
   timestamp?: string;
 }

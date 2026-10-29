@@ -76,6 +76,9 @@ import {
   subscribeToSupabaseRealtime,
   subscribeToSupabaseTheme,
   broadcastThemeToSupabase,
+  fetchWinnersFromSupabase,
+  upsertWinnersInSupabase,
+  subscribeToSupabaseWinners,
 } from './lib/supabase';
 
 // Helper to check if current URL is for Admin Portal (/spay-admin, /admin, etc.)
@@ -120,6 +123,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<MainSectionTab>('leaderboard');
   const currentVersionRef = useRef<number>(0);
   const currentThemeVersionRef = useRef<number>(0);
+  const currentWinnersVersionRef = useRef<number>(0);
 
   // Background theme state
   const [currentTheme, setCurrentTheme] = useState<ThemeSettings>(getStoredTheme);
@@ -135,6 +139,12 @@ export default function App() {
       setWinnersSettings(newSettings);
       saveStoredWinnersSettings(newSettings);
       broadcastWinnersChange(newSettings);
+
+      // Direct instant Supabase upsert (realtime push to all users' devices)
+      upsertWinnersInSupabase(newSettings).catch((err) => {
+        console.warn('[Supabase Direct] Winners upsert error:', err);
+      });
+
       if (syncToServer) {
         saveWinnersToApi(newSettings).catch((err) => {
           console.warn('[Winners] Sync error:', err);
@@ -311,6 +321,23 @@ export default function App() {
       }
     });
 
+    // Listen for Supabase Realtime winners changes (instant live sync to all mobiles across India)
+    const unsubscribeSupabaseWinners = subscribeToSupabaseWinners((freshWinners) => {
+      if (isMounted && freshWinners) {
+        console.log('[Supabase Realtime] Winners update:', freshWinners.isVisible, freshWinners.winners.length);
+        setWinnersSettings(freshWinners);
+        saveStoredWinnersSettings(freshWinners);
+      }
+    });
+
+    // Fetch winners directly from Supabase first
+    fetchWinnersFromSupabase().then((supaWinners) => {
+      if (isMounted && supaWinners) {
+        setWinnersSettings(supaWinners);
+        saveStoredWinnersSettings(supaWinners);
+      }
+    });
+
     // Listen for Supabase Realtime theme broadcasts (All India Multi-Device Live Sync)
     const unsubscribeSupabaseTheme = subscribeToSupabaseTheme((newTheme) => {
       if (isMounted && newTheme && newTheme.bgBaseColor) {
@@ -327,7 +354,7 @@ export default function App() {
       }
     });
 
-    // Fetch winners from central server
+    // Fetch winners from central server fallback
     fetchWinnersFromApi().then((serverWinners) => {
       if (isMounted && serverWinners) {
         setWinnersSettings(serverWinners);
@@ -444,6 +471,20 @@ export default function App() {
             saveStoredTheme(info.theme);
           }
         }
+        if (info.winners && typeof info.winners.isVisible === 'boolean') {
+          const incomingWinnersVer = Number(info.winnersVersion || 0);
+          if (incomingWinnersVer > currentWinnersVersionRef.current) {
+            currentWinnersVersionRef.current = incomingWinnersVer;
+            setWinnersSettings(info.winners);
+            saveStoredWinnersSettings(info.winners);
+          } else if (
+            info.winners.isVisible !== winnersSettings.isVisible ||
+            info.winners.lastUpdated !== winnersSettings.lastUpdated
+          ) {
+            setWinnersSettings(info.winners);
+            saveStoredWinnersSettings(info.winners);
+          }
+        }
       }
     }, 1500);
 
@@ -454,6 +495,12 @@ export default function App() {
         if (isMounted && serverTheme && serverTheme.bgBaseColor) {
           setCurrentTheme(serverTheme);
           saveStoredTheme(serverTheme);
+        }
+      });
+      fetchWinnersFromSupabase().then((supaWinners) => {
+        if (isMounted && supaWinners) {
+          setWinnersSettings(supaWinners);
+          saveStoredWinnersSettings(supaWinners);
         }
       });
       fetchWinnersFromApi().then((serverWinners) => {
@@ -470,6 +517,7 @@ export default function App() {
       isMounted = false;
       unsubscribeSupabase();
       unsubscribeSupabaseTheme();
+      unsubscribeSupabaseWinners();
       unsubscribeTabs();
       unsubscribeTheme();
       unsubscribeHistory();

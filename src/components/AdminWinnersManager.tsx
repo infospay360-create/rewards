@@ -59,8 +59,8 @@ export const AdminWinnersManager: React.FC<AdminWinnersManagerProps> = ({
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 1. Toggle Show / Hide Winner List
-  const handleToggleVisibility = () => {
+  // 1. Toggle Show / Hide Winner List (Instant Supabase & Server Live Sync)
+  const handleToggleVisibility = async () => {
     const nextState = !winnersSettings.isVisible;
     const updated: WinnersSettings = {
       ...winnersSettings,
@@ -68,10 +68,22 @@ export const AdminWinnersManager: React.FC<AdminWinnersManagerProps> = ({
       lastUpdated: new Date().toISOString(),
     };
     onUpdateWinnersSettings(updated);
+
+    // Call server endpoint directly for immediate persistence & SSE push
+    try {
+      await fetch('/api/winners/toggle-visibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVisible: nextState }),
+      });
+    } catch (e) {
+      console.warn('Toggle visibility API note:', e);
+    }
+
     if (nextState) {
-      showToast('🟢 Winner List ab sabhi visitors ko Top me LIVE dikh rahi hai!');
+      showToast('🟢 Winner List ab sabhi visitors ko Top me LIVE dikh rahi hai (Supabase & Mobile Sync)!');
     } else {
-      showToast('🔴 Winner List ab website se CHUP (HIDE) ho gayi hai.');
+      showToast('🔴 Winner List ab website se CHUP (HIDE) ho gayi hai (Sabhi mobile me turant gayab)!');
     }
   };
 
