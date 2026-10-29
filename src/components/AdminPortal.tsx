@@ -24,8 +24,9 @@ import {
   RotateCcw,
   Clock,
   Calendar,
+  Trophy,
 } from 'lucide-react';
-import { LeaderboardUser, ThemeSettings, UpdateHistoryLog } from '../types';
+import { LeaderboardUser, ThemeSettings, UpdateHistoryLog, WinnersSettings } from '../types';
 import {
   verifyAdminCredentials,
   getStoredCustomPassword,
@@ -38,10 +39,13 @@ import {
 import { QuickUpgradeBar } from './QuickUpgradeBar';
 import { ThemeSelectorCard } from './ThemeSelectorCard';
 import { AdminUpdateHistory } from './AdminUpdateHistory';
+import { AdminWinnersManager } from './AdminWinnersManager';
 
 interface AdminPortalProps {
   isAdmin: boolean;
   users: LeaderboardUser[];
+  winnersSettings?: WinnersSettings;
+  onUpdateWinnersSettings?: (newSettings: WinnersSettings) => void;
   historyLogs?: UpdateHistoryLog[];
   onClearHistory?: () => void;
   currentTheme: ThemeSettings;
@@ -69,6 +73,8 @@ interface AdminPortalProps {
 export const AdminPortal: React.FC<AdminPortalProps> = ({
   isAdmin,
   users,
+  winnersSettings,
+  onUpdateWinnersSettings,
   historyLogs = [],
   onClearHistory = () => {},
   currentTheme,
@@ -103,8 +109,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Search in Admin User List
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Active Admin Sub-tab
-  const [activeTab, setActiveTab] = useState<'MANAGEMENT' | 'HISTORY'>('MANAGEMENT');
+  // Active Admin Sub-tab (Contestants & Directs, Rewards Winners, or Update History)
+  const [activeTab, setActiveTab] = useState<'MANAGEMENT' | 'WINNERS' | 'HISTORY'>('MANAGEMENT');
 
   // Rate-limiting check
   useEffect(() => {
@@ -359,6 +365,34 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
           {/* Quick Action Navigation */}
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+            {winnersSettings && onUpdateWinnersSettings && (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !winnersSettings.isVisible;
+                  onUpdateWinnersSettings({
+                    ...winnersSettings,
+                    isVisible: nextState,
+                    lastUpdated: new Date().toISOString(),
+                  });
+                  showToast(
+                    nextState
+                      ? '🟢 Winner List ab sabhi visitors ko Top me LIVE dikh rahi hai!'
+                      : '🔴 Winner List ab website se CHUP (HIDE) ho gayi hai.'
+                  );
+                }}
+                className={`flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer border shadow-sm ${
+                  winnersSettings.isVisible
+                    ? 'bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border-emerald-500/50 shadow-emerald-950/50'
+                    : 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-300 border-rose-500/50 shadow-rose-950/50'
+                }`}
+                title={winnersSettings.isVisible ? 'Click to HIDE Winners from website' : 'Click to SHOW Winners live on website'}
+              >
+                {winnersSettings.isVisible ? <Eye className="w-4 h-4 text-emerald-400" /> : <EyeOff className="w-4 h-4 text-rose-400" />}
+                <span>{winnersSettings.isVisible ? '🏆 Winners: LIVE (SHOW)' : '🏆 Winners: HIDDEN (CHUP)'}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={onNavigateToLeaderboard}
@@ -402,11 +436,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
       {/* Admin Mode Switcher Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/95 border border-slate-800 p-2.5 rounded-2xl shadow-lg">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab('MANAGEMENT')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
               activeTab === 'MANAGEMENT'
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -425,8 +459,46 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveTab('WINNERS')}
+            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+              activeTab === 'WINNERS'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>🏆 Rewards Winners</span>
+            {winnersSettings && (
+              <span
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-black border ${
+                  winnersSettings.isVisible
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    winnersSettings.isVisible ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                  }`}
+                />
+                {winnersSettings.isVisible ? 'LIVE' : 'HIDDEN'}
+              </span>
+            )}
+            {winnersSettings && (
+              <span
+                className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold ${
+                  activeTab === 'WINNERS' ? 'bg-slate-950/30 text-slate-950' : 'bg-slate-800 text-amber-300'
+                }`}
+              >
+                {winnersSettings.winners.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('HISTORY')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
               activeTab === 'HISTORY'
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -469,7 +541,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         )}
       </div>
 
-      {activeTab === 'HISTORY' ? (
+      {activeTab === 'WINNERS' && winnersSettings && onUpdateWinnersSettings ? (
+        <AdminWinnersManager
+          users={users}
+          winnersSettings={winnersSettings}
+          onUpdateWinnersSettings={onUpdateWinnersSettings}
+          showToast={showToast}
+        />
+      ) : activeTab === 'HISTORY' ? (
         <AdminUpdateHistory
           logs={historyLogs}
           onClearHistory={onClearHistory}

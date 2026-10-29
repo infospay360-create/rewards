@@ -1,0 +1,68 @@
+{
+  "isVisible": true,
+  "title": "🏆 SmartPay 360 Official Rewards & Winners Announcement 🎊",
+  "announcementSubtitle": "Live list of official contest prize winners (Top 10 Cash Rewards & Lucky Draw Prizes)",
+  "lastUpdated": "2026-10-29T17:48:58.121Z",
+  "winners": [
+    {
+      "id": "win-1",
+      "userId": "SPAY330606",
+      "name": "Babla Paul",
+      "prizeCategory": "cash_top10",
+      "rankOrPosition": 1,
+      "prizeTitle": "🥇 1st Prize: ₹51,000 Guaranteed Cash",
+      "prizeValue": "₹51,000 Cash",
+      "announcedDate": "29 Oct 2026",
+      "claimStatus": "VERIFIED",
+      "badgeNote": "Grand Champion 🏆"
+    },
+    {
+      "id": "win-2",
+      "userId": "SPAY447004",
+      "name": "Suman Dey",
+      "prizeCategory": "cash_top10",
+      "rankOrPosition": 2,
+      "prizeTitle": "🥈 2nd Prize: ₹31,000 Guaranteed Cash",
+      "prizeValue": "₹31,000 Cash",
+      "announcedDate": "29 Oct 2026",
+      "claimStatus": "VERIFIED",
+      "badgeNote": "Rank 2 Star 🥈"
+    },
+    {
+      "id": "win-3",
+      "userId": "SPAY411819",
+      "name": "Leader One",
+      "prizeCategory": "cash_top10",
+      "rankOrPosition": 3,
+      "prizeTitle": "🥉 3rd Prize: ₹21,000 Guaranteed Cash",
+      "prizeValue": "₹21,000 Cash",
+      "announcedDate": "29 Oct 2026",
+      "claimStatus": "DISBURSED",
+      "badgeNote": "Rank 3 Winner 🥉"
+    },
+    {
+      "id": "win-4",
+      "userId": "SPAY512990",
+      "name": "Rajesh Sharma",
+      "prizeCategory": "lucky_draw",
+      "rankOrPosition": "Lucky Draw #1",
+      "prizeTitle": "🎁 Lucky Draw: Android 5G Smartphone",
+      "prizeValue": "Android Smartphone",
+      "announcedDate": "29 Oct 2026",
+      "claimStatus": "PENDING",
+      "badgeNote": "Lucky Draw 📱"
+    },
+    {
+      "id": "win-5",
+      "userId": "SPAY620112",
+      "name": "Pooja Verma",
+      "prizeCategory": "lucky_draw",
+      "rankOrPosition": "Lucky Draw #2",
+      "prizeTitle": "🎁 Lucky Draw: 32\" HD Smart TV",
+      "prizeValue": "32\" Smart LED TV",
+      "announcedDate": "29 Oct 2026",
+      "claimStatus": "VERIFIED",
+      "badgeNote": "Mega Gift 📺"
+    }
+  ]
+}

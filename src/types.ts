@@ -80,4 +80,23 @@ export interface UpdateHistoryLog {
   previousTickets?: number;
   newTickets?: number;
 }
+export interface RewardWinner {
+  id: string; // unique id e.g. "win-1"
+  userId: string; // e.g. "SPAY411819"
+  name: string; // winner name e.g. "Leader One"
+  prizeCategory: 'cash_top10' | 'lucky_draw' | 'mega_bonus' | 'special_gift';
+  rankOrPosition: number | string; // e.g. 1 or "1st" or "Lucky Draw #5"
+  prizeTitle: string; // e.g. "1st Prize: ₹51,000 Cash"
+  prizeValue: string; // e.g. "₹51,000" or "Android Smartphone"
+  announcedDate?: string; // e.g. "29 Oct 2026"
+  claimStatus?: 'CLAIMED' | 'VERIFIED' | 'PENDING' | 'DISBURSED';
+  badgeNote?: string; // e.g. "Grand Champion", "Mega Draw Winner"
+}
 
+export interface WinnersSettings {
+  isVisible: boolean; // Admin show/hide toggle for public view
+  title: string; // e.g. "🎉 SmartPay 360 Official Contest Winners Announced!"
+  announcementSubtitle?: string; // Sub-headline
+  lastUpdated: string;
+  winners: RewardWinner[];
+}

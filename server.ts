@@ -4,7 +4,7 @@ import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { INITIAL_LEADERBOARD_USERS } from './src/data/initialData';
-import { LeaderboardUser } from './src/types';
+import { LeaderboardUser, RewardWinner, WinnersSettings } from './src/types';
 import { calculateTickets, sortLeaderboard } from './src/utils/leaderboardUtils';
 
 const app = express();
@@ -370,6 +370,121 @@ function broadcastHistoryUpdate(historyLogs: any[]) {
   }
 }
 
+// ==========================================
+// REWARDS WINNER STORE (PERSISTENT ON DISK)
+// ==========================================
+const WINNERS_FILE = path.join(DATA_DIR, 'winners-store.json');
+let cachedWinnersSettings: WinnersSettings = {
+  isVisible: true,
+  title: '🏆 SmartPay 360 Official Rewards & Winners Announcement 🎊',
+  announcementSubtitle: 'Live list of official contest prize winners (Top 10 Cash Rewards & Lucky Draw Prizes)',
+  lastUpdated: new Date().toISOString(),
+  winners: [
+    {
+      id: 'win-1',
+      userId: 'SPAY330606',
+      name: 'Babla Paul',
+      prizeCategory: 'cash_top10',
+      rankOrPosition: 1,
+      prizeTitle: '🥇 1st Prize: ₹51,000 Guaranteed Cash',
+      prizeValue: '₹51,000 Cash',
+      announcedDate: '29 Oct 2026',
+      claimStatus: 'VERIFIED',
+      badgeNote: 'Grand Champion 🏆',
+    },
+    {
+      id: 'win-2',
+      userId: 'SPAY447004',
+      name: 'Suman Dey',
+      prizeCategory: 'cash_top10',
+      rankOrPosition: 2,
+      prizeTitle: '🥈 2nd Prize: ₹31,000 Guaranteed Cash',
+      prizeValue: '₹31,000 Cash',
+      announcedDate: '29 Oct 2026',
+      claimStatus: 'VERIFIED',
+      badgeNote: 'Rank 2 Star 🥈',
+    },
+    {
+      id: 'win-3',
+      userId: 'SPAY411819',
+      name: 'Leader One',
+      prizeCategory: 'cash_top10',
+      rankOrPosition: 3,
+      prizeTitle: '🥉 3rd Prize: ₹21,000 Guaranteed Cash',
+      prizeValue: '₹21,000 Cash',
+      announcedDate: '29 Oct 2026',
+      claimStatus: 'DISBURSED',
+      badgeNote: 'Rank 3 Winner 🥉',
+    },
+    {
+      id: 'win-4',
+      userId: 'SPAY512990',
+      name: 'Rajesh Sharma',
+      prizeCategory: 'lucky_draw',
+      rankOrPosition: 'Lucky Draw #1',
+      prizeTitle: '🎁 Lucky Draw: Android 5G Smartphone',
+      prizeValue: 'Android Smartphone',
+      announcedDate: '29 Oct 2026',
+      claimStatus: 'PENDING',
+      badgeNote: 'Lucky Draw 📱',
+    },
+    {
+      id: 'win-5',
+      userId: 'SPAY620112',
+      name: 'Pooja Verma',
+      prizeCategory: 'lucky_draw',
+      rankOrPosition: 'Lucky Draw #2',
+      prizeTitle: '🎁 Lucky Draw: 32" HD Smart TV',
+      prizeValue: '32" Smart LED TV',
+      announcedDate: '29 Oct 2026',
+      claimStatus: 'VERIFIED',
+      badgeNote: 'Mega Gift 📺',
+    },
+  ],
+};
+
+function initWinnersStore(): void {
+  try {
+    if (fs.existsSync(WINNERS_FILE)) {
+      const raw = fs.readFileSync(WINNERS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.isVisible === 'boolean' && Array.isArray(parsed.winners)) {
+        cachedWinnersSettings = parsed;
+        console.log(`[WinnersStore] Loaded ${cachedWinnersSettings.winners.length} winners (Visible: ${cachedWinnersSettings.isVisible})`);
+        return;
+      }
+    }
+    persistWinnersStore();
+  } catch (err) {
+    console.warn('[WinnersStore] Init error:', err);
+  }
+}
+
+function persistWinnersStore(): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(WINNERS_FILE, JSON.stringify(cachedWinnersSettings, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('[WinnersStore] Failed to save winners:', err);
+  }
+}
+
+function broadcastWinnersUpdate(settings: WinnersSettings) {
+  const payload = JSON.stringify({
+    type: 'WINNERS_UPDATED',
+    settings,
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
 // Broadcast real-time update to all connected browsers and mobile devices
 function broadcastLiveUpdate(source = 'update') {
   const payload = JSON.stringify({
@@ -393,6 +508,7 @@ function broadcastLiveUpdate(source = 'update') {
 initStore();
 initThemeStore();
 initHistoryStore();
+initWinnersStore();
 
 // ==========================================
 // ANTI-CACHE & CORS MIDDLEWARE FOR ALL /api
@@ -434,6 +550,7 @@ app.get('/api/stream', (req, res) => {
     users: cachedUsers,
     theme: cachedTheme,
     history: cachedHistory,
+    winners: cachedWinnersSettings,
   });
   res.write(`data: ${initialPayload}\n\n`);
 
@@ -796,6 +913,73 @@ app.post('/api/history/clear', (req, res) => {
   persistHistoryStore();
   broadcastHistoryUpdate([]);
   res.json({ success: true, history: [] });
+});
+
+// ==========================================
+// REWARDS WINNERS API ROUTES
+// ==========================================
+app.get('/api/winners', (req, res) => {
+  res.json(cachedWinnersSettings);
+});
+
+app.post('/api/winners', (req, res) => {
+  const body = req.body;
+  if (!body || typeof body !== 'object') {
+    return res.status(400).json({ error: 'Valid winners object required' });
+  }
+
+  const isVisible = typeof body.isVisible === 'boolean' ? body.isVisible : cachedWinnersSettings.isVisible;
+  const title = body.title && typeof body.title === 'string' ? body.title : cachedWinnersSettings.title;
+  const announcementSubtitle = typeof body.announcementSubtitle === 'string' ? body.announcementSubtitle : cachedWinnersSettings.announcementSubtitle;
+  const winnersList = Array.isArray(body.winners) ? body.winners : cachedWinnersSettings.winners;
+
+  cachedWinnersSettings = {
+    isVisible,
+    title,
+    announcementSubtitle,
+    lastUpdated: new Date().toISOString(),
+    winners: winnersList,
+  };
+
+  persistWinnersStore();
+  broadcastWinnersUpdate(cachedWinnersSettings);
+
+  // Also log into update history if admin updated winners
+  addHistoryRecord({
+    userId: 'ADMIN',
+    userName: 'Admin Winners Portal',
+    actionType: 'UPGRADE',
+    actionLabel: isVisible ? 'Winners List Published' : 'Winners List Hidden',
+    changeSummary: `Total Winners: ${winnersList.length} | Display: ${isVisible ? 'LIVE ON SITE' : 'HIDDEN'}`,
+  });
+
+  res.json({ success: true, settings: cachedWinnersSettings });
+});
+
+app.post('/api/winners/toggle-visibility', (req, res) => {
+  const { isVisible } = req.body;
+  if (typeof isVisible !== 'boolean') {
+    return res.status(400).json({ error: 'isVisible boolean required' });
+  }
+
+  cachedWinnersSettings = {
+    ...cachedWinnersSettings,
+    isVisible,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  persistWinnersStore();
+  broadcastWinnersUpdate(cachedWinnersSettings);
+
+  addHistoryRecord({
+    userId: 'ADMIN',
+    userName: 'Admin Winners Portal',
+    actionType: 'EDIT',
+    actionLabel: isVisible ? 'Winners Banner Activated' : 'Winners Banner Deactivated',
+    changeSummary: `Public display state toggled to: ${isVisible ? 'LIVE (SHOW)' : 'HIDDEN'}`,
+  });
+
+  res.json({ success: true, settings: cachedWinnersSettings });
 });
 
 // Supabase Status & Schema Endpoints

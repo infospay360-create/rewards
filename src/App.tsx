@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ShieldCheck } from 'lucide-react';
-import { LeaderboardUser, ThemeSettings, UpdateHistoryLog } from './types';
+import { LeaderboardUser, ThemeSettings, UpdateHistoryLog, RewardWinner, WinnersSettings } from './types';
 import { INITIAL_LEADERBOARD_USERS } from './data/initialData';
 import {
   loadUsersFromStorage,
@@ -40,6 +40,14 @@ import {
   subscribeToThemeBroadcasts,
   THEME_STORAGE_KEY,
 } from './utils/themePresets';
+import {
+  getStoredWinnersSettings,
+  saveStoredWinnersSettings,
+  fetchWinnersFromApi,
+  saveWinnersToApi,
+  broadcastWinnersChange,
+  subscribeToWinnersBroadcasts,
+} from './utils/winnerUtils';
 import { Navbar } from './components/Navbar';
 import { TopActionsBar, MainSectionTab } from './components/TopActionsBar';
 import { RewardsModal } from './components/RewardsModal';
@@ -53,6 +61,7 @@ import { BroadcastModal } from './components/BroadcastModal';
 import { UserEditModal } from './components/UserEditModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPortal } from './components/AdminPortal';
+import { TopWinnersShowcase } from './components/TopWinnersShowcase';
 import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import { SmartPayPosterHeader } from './components/SmartPayPosterHeader';
 import { SmartPayPosterFooter } from './components/SmartPayPosterFooter';
@@ -117,6 +126,23 @@ export default function App() {
 
   // Live Update History state
   const [historyLogs, setHistoryLogs] = useState<UpdateHistoryLog[]>(getStoredHistoryLogs);
+
+  // Rewards Winners Announcement State
+  const [winnersSettings, setWinnersSettings] = useState<WinnersSettings>(getStoredWinnersSettings);
+
+  const handleWinnersSettingsChange = useCallback(
+    async (newSettings: WinnersSettings, syncToServer = true) => {
+      setWinnersSettings(newSettings);
+      saveStoredWinnersSettings(newSettings);
+      broadcastWinnersChange(newSettings);
+      if (syncToServer) {
+        saveWinnersToApi(newSettings).catch((err) => {
+          console.warn('[Winners] Sync error:', err);
+        });
+      }
+    },
+    []
+  );
 
   const handleThemeChange = useCallback(
     async (newTheme: ThemeSettings, syncToServer = true) => {
@@ -277,6 +303,14 @@ export default function App() {
       }
     });
 
+    // Listen for cross-tab winners broadcasts
+    const unsubscribeWinners = subscribeToWinnersBroadcasts((settings) => {
+      if (isMounted && settings) {
+        setWinnersSettings(settings);
+        saveStoredWinnersSettings(settings);
+      }
+    });
+
     // Listen for Supabase Realtime theme broadcasts (All India Multi-Device Live Sync)
     const unsubscribeSupabaseTheme = subscribeToSupabaseTheme((newTheme) => {
       if (isMounted && newTheme && newTheme.bgBaseColor) {
@@ -290,6 +324,14 @@ export default function App() {
       if (isMounted && serverTheme && serverTheme.bgBaseColor) {
         setCurrentTheme(serverTheme);
         saveStoredTheme(serverTheme);
+      }
+    });
+
+    // Fetch winners from central server
+    fetchWinnersFromApi().then((serverWinners) => {
+      if (isMounted && serverWinners) {
+        setWinnersSettings(serverWinners);
+        saveStoredWinnersSettings(serverWinners);
       }
     });
 
@@ -310,6 +352,16 @@ export default function App() {
           const parsedTheme = JSON.parse(e.newValue);
           if (parsedTheme && parsedTheme.bgBaseColor) {
             setCurrentTheme(parsedTheme);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (e.key === 'spay_winners_settings_v1' && e.newValue) {
+        try {
+          const parsedWinners = JSON.parse(e.newValue);
+          if (parsedWinners && typeof parsedWinners.isVisible === 'boolean') {
+            setWinnersSettings(parsedWinners);
           }
         } catch {
           // ignore
@@ -341,6 +393,14 @@ export default function App() {
             if (data && Array.isArray(data.history)) {
               setHistoryLogs(data.history);
               saveStoredHistoryLogs(data.history);
+            }
+            if (data && data.winners && typeof data.winners.isVisible === 'boolean') {
+              setWinnersSettings(data.winners);
+              saveStoredWinnersSettings(data.winners);
+            }
+            if (data && data.type === 'WINNERS_UPDATED' && data.settings) {
+              setWinnersSettings(data.settings);
+              saveStoredWinnersSettings(data.settings);
             }
           } catch (e) {
             console.error('[SSE] Parse error:', e);
@@ -396,6 +456,12 @@ export default function App() {
           saveStoredTheme(serverTheme);
         }
       });
+      fetchWinnersFromApi().then((serverWinners) => {
+        if (isMounted && serverWinners) {
+          setWinnersSettings(serverWinners);
+          saveStoredWinnersSettings(serverWinners);
+        }
+      });
     };
     window.addEventListener('focus', handleVisibilityOrFocus);
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
@@ -407,6 +473,7 @@ export default function App() {
       unsubscribeTabs();
       unsubscribeTheme();
       unsubscribeHistory();
+      unsubscribeWinners();
       window.removeEventListener('storage', handleStorageChange);
       if (eventSource) eventSource.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -912,6 +979,8 @@ export default function App() {
           <AdminPortal
             isAdmin={isAdmin}
             users={users}
+            winnersSettings={winnersSettings}
+            onUpdateWinnersSettings={handleWinnersSettingsChange}
             historyLogs={historyLogs}
             onClearHistory={handleClearHistory}
             currentTheme={currentTheme}
@@ -933,6 +1002,17 @@ export default function App() {
           <>
             {/* SmartPay 360 Official Poster Branding Header Banner */}
             <SmartPayPosterHeader currentTheme={currentTheme} />
+
+            {/* Top Celebratory Official Rewards & Winners Announcement (Live for all, Admin Show/Hide controlled) */}
+            <TopWinnersShowcase
+              settings={winnersSettings}
+              isAdmin={isAdmin}
+              onNavigateToAdminWinners={() => {
+                setCurrentView('admin');
+              }}
+              isLight={currentTheme.isLight}
+              showToast={showToast}
+            />
 
             {/* Top 3D Navigation Switcher (Leaderboard | 10 Cash Rewards | 40 Lucky Draw) */}
             <TopActionsBar
